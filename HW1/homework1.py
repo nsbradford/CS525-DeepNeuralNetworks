@@ -29,10 +29,14 @@ def problem3 (A, B, C):
     return A * B + np.transpose(C)
 
 def problem4 (x, y):
-    pass
+    """ Given column vectors x and y, compute the inner product of x and y (i.e., x>y). [ 2 pts ]"""
+    return np.dot(np.transpose(x), y)
 
 def problem5 (A):
-    pass
+    """ Given matrix A, return a matrix with the same dimensions as A but that contains all zeros. 
+        Use numpy.zeros. [ 2 pts ]
+    """
+    return np.zeros(A.shape)
 
 def problem6 (A):
     pass
@@ -70,6 +74,8 @@ class HomeworkTest(unittest.TestCase):
     A = np.arange(4).reshape((2,2))
     B = np.arange(4, 8).reshape((2,2))
     C = np.arange(8, 12).reshape((2,2))
+    x = np.arange(5)
+    y = np.arange(5, 10)
 
     def test_problem1(self):
         print problem1(self.A, self.B)
@@ -81,10 +87,10 @@ class HomeworkTest(unittest.TestCase):
         print problem3(self.A, self.B, self.C)
 
     def test_problem4(self):
-        pass
+        print problem4(self.x, self.y)
 
     def test_problem5(self):
-        pass
+        print problem5(self.A)
 
     def test_problem6(self):
         pass
