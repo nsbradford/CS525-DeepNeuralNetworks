@@ -1,46 +1,121 @@
+""" homework1.py
+    Nicholas S. Bradford
+    CS 525 Deep Neural Networks
+    1.18.2017
+
+    HW1: numpy exercises
+"""
+
+import unittest
 import numpy as np
 
+
 def problem1 (A, B):
-	return A + B
+    """ Given matrices A and B, compute and return an expression for A + B. [ 2 pts ]"""
+    return A + B
 
 def problem2 (A, B, C):
-	return ...
+    """ Given matrices A, B, and C, compute and return (AB - C)
+        (i.e., right-multiply matrix A by matrixB, and then subtract C). 
+        Use dot or numpy.dot. [ 2 pts ]
+    """
+    return np.dot(A, B) - C
 
 def problem3 (A, B, C):
-	return ...
+    """ Given matrices A, B, and C, return A  B + C>, where  represents the element-wise (Hadamard)
+        product and > represents matrix transpose. In numpy, the element-wise product is obtained simply
+        with *. [ 2 pts ]
+    """
+    return A * B + np.transpose(C)
 
 def problem4 (x, y):
-	return ...
+    pass
 
 def problem5 (A):
-	return ...
+    pass
 
 def problem6 (A):
-	return ...
+    pass
 
 def problem7 (A):
-	return ...
+    pass
 
 def problem8 (A, x):
-	return ...
+    pass
 
 def problem9 (A, x):
-	return ...
+    pass
 
 def problem10 (A, alpha):
-	return ...
+    pass
 
 def problem11 (A, i, j):
-	return ...
+    pass
 
 def problem12 (A, i):
-	return ...
+    pass
 
 def problem13 (A, c, d):
-	return ...
+    pass
 
 def problem14 (A, k):
-	return ...
+    pass
 
 def problem15 (x, k, m, s):
-	return ...
+    pass
+
+
+class HomeworkTest(unittest.TestCase):
+
+    A = np.arange(4).reshape((2,2))
+    B = np.arange(4, 8).reshape((2,2))
+    C = np.arange(8, 12).reshape((2,2))
+
+    def test_problem1(self):
+        print problem1(self.A, self.B)
+
+    def test_problem2(self):
+        print problem2(self.A, self.B, self.C)
+
+    def test_problem3(self):
+        print problem3(self.A, self.B, self.C)
+
+    def test_problem4(self):
+        pass
+
+    def test_problem5(self):
+        pass
+
+    def test_problem6(self):
+        pass
+
+    def test_problem7(self):
+        pass
+
+    def test_problem8(self):
+        pass
+
+    def test_problem9(self):
+        pass
+
+    def test_problem10(self):
+        pass
+
+    def test_problem11(self):
+        pass
+
+    def test_problem12(self):
+        pass
+
+    def test_problem13(self):
+        pass
+
+    def test_problem14(self):
+        pass
+
+    def test_problem15(self):
+        pass
+
+
+if __name__ == '__main__':
+    unittest.main()
