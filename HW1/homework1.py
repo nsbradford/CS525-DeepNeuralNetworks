@@ -4,6 +4,7 @@
     1.18.2017
 
     HW1: numpy exercises
+    Runs on Python 3.5
 """
 
 import unittest
@@ -11,62 +12,113 @@ import numpy as np
 
 
 def problem1 (A, B):
-    """ Given matrices A and B, compute and return an expression for A + B. [ 2 pts ]"""
+    """ Given matrices A and B, compute and return an expression for A + B. """
     return A + B
 
 def problem2 (A, B, C):
     """ Given matrices A, B, and C, compute and return (AB - C)
         (i.e., right-multiply matrix A by matrixB, and then subtract C). 
-        Use dot or numpy.dot. [ 2 pts ]
+        Use dot or numpy.dot. 
     """
     return np.dot(A, B) - C
 
 def problem3 (A, B, C):
     """ Given matrices A, B, and C, return A  B + C>, where  represents the element-wise (Hadamard)
         product and > represents matrix transpose. In numpy, the element-wise product is obtained simply
-        with *. [ 2 pts ]
+        with *. 
     """
     return A * B + np.transpose(C)
 
 def problem4 (x, y):
-    """ Given column vectors x and y, compute the inner product of x and y (i.e., x>y). [ 2 pts ]"""
+    """ Given column vectors x and y, compute the inner product of x and y (i.e., x>y). """
     return np.dot(np.transpose(x), y)
 
 def problem5 (A):
     """ Given matrix A, return a matrix with the same dimensions as A but that contains all zeros. 
-        Use numpy.zeros. [ 2 pts ]
+        Use numpy.zeros. 
     """
     return np.zeros(A.shape)
 
 def problem6 (A):
-    pass
+    """ Given matrix A, return a vector with the same number of rows as A but that contains all ones. 
+        Use numpy.ones. 
+    """
+    return np.ones(A.shape[0])
 
 def problem7 (A):
-    pass
+    """ Given (invertible) matrix A, compute A−1. """
+    return np.linalg.inv(A)
 
 def problem8 (A, x):
-    pass
+    """ Given square matrix A and column vector x, use numpy.linalg.solve to compute A−1x. 
+        If Ax = b, then x = A-1b. If Ab = x, then b = A-1x
+    """
+    return np.linalg.solve(A, x)
 
 def problem9 (A, x):
-    pass
+    """ Given square matrix A and row vector x, use numpy.linalg.solve to compute xA−1. 
+        Hint: AB = (B^T A^T)^T.
+        We also know that the inverse of a transpose == the tranpose of the inverse,
+            so solve(A^T, b^T) = (A^T)-1 b^T = (A-1)^T b^T = (bA-1)^T
+    """ 
+    return np.transpose(np.linalg.solve(np.transpose(A), np.transpose(x)))
 
 def problem10 (A, alpha):
-    pass
+    """ Given square matrix A and (scalar) α, compute A + αI, where I is the identity matrix 
+        with the same dimensions as A. Use numpy.eye.
+    """
+    return A + np.eye(A.shape[0]) * alpha
 
 def problem11 (A, i, j):
-    pass
+    """ Given matrix A and integers i,j, return the jth column of the ith row of A, i.e., Aij."""
+    return A[i, j]
 
 def problem12 (A, i):
-    pass
+    """ Given matrix A and integer i, return the sum of all the entries in the ith row, 
+        i.e.,  SUMj Aij. Do not use a loop, which in Python is very slow. 
+        Instead use the numpy.sum function.
+    """ 
+    return np.sum(A[i, :])
 
 def problem13 (A, c, d):
-    pass
+    """ Given matrix A and scalars c, d, compute the arithmetic mean over all entries of A 
+        that are between c and d (inclusive). 
+        In other words, if S = {(i,j) : c ≤ Aij ≤ d}, then compute SUM Aij. 
+        Use numpy.nonzero along with numpy.mean.
+    """
+    # nonzeroA = A[np.nonzero(A)] # TODO what if 0 is within c and d? what's the point of nonzero()?
+    mask = (A >= c) & (A <= d)
+    return np.mean(A[mask])
 
 def problem14 (A, k):
-    pass
+    """ Given an (n × n) matrix A and integer k, return an (n × k) matrix containing the 
+        right-eigenvectors of A corresponding to the k largest eigenvalues of A. 
+        Use numpy.linalg.eig to compute eigenvectors.
+    """
+    vals, vecs = np.linalg.eig(A)
+    combined_columns = np.vstack((vals, vecs))
+    transposed_rows = np.transpose(combined_columns)
+    tosort = transposed_rows[:, 0].flatten()
+    mask = list(np.argsort(tosort[0]).flat) # argsort seems to be misbehaving
+    sorted_rows = transposed_rows[mask]
+    k_rows = sorted_rows[vecs.shape[0] - k:, 1:] # drop the eigenvalue column too
+    eig_columns = np.transpose(k_rows)
+    return eig_columns # TODO need to worry about bounds of k?
 
 def problem15 (x, k, m, s):
-    pass
+    """ Given a n-dimensional column vector x, an integer k, and positive scalars m, s, 
+            return an (n×k) matrix, each of whose columns is a sample from multidimensional 
+            Gaussian distribution N (x + mz, sI), where z is an n-dimensional column vector 
+            containing all ones and I is the identity matrix. 
+        Use either numpy.random.multivariate normal or numpy.random.randn.
+    """ 
+    n = x .shape[0]
+    z = np.ones(n)
+    i = np.eye(n)
+    mean = x + (m * z)
+    cov_matrix = s * i
+    sample = np.random.multivariate_normal(mean, cov_matrix, k) 
+    return np.transpose(sample) # make N x K matrix
 
 
 class HomeworkTest(unittest.TestCase):
@@ -76,52 +128,26 @@ class HomeworkTest(unittest.TestCase):
     C = np.arange(8, 12).reshape((2,2))
     x = np.arange(5)
     y = np.arange(5, 10)
+    rect = np.arange(12).reshape((3, 4))
+    inv = np.matrix([[4, 3], [1, 1]])
+    row = np.arange(2)
 
-    def test_problem1(self):
-        print problem1(self.A, self.B)
-
-    def test_problem2(self):
-        print problem2(self.A, self.B, self.C)
-
-    def test_problem3(self):
-        print problem3(self.A, self.B, self.C)
-
-    def test_problem4(self):
-        print problem4(self.x, self.y)
-
-    def test_problem5(self):
-        print problem5(self.A)
-
-    def test_problem6(self):
-        pass
-
-    def test_problem7(self):
-        pass
-
-    def test_problem8(self):
-        pass
-
-    def test_problem9(self):
-        pass
-
-    def test_problem10(self):
-        pass
-
-    def test_problem11(self):
-        pass
-
-    def test_problem12(self):
-        pass
-
-    def test_problem13(self):
-        pass
-
-    def test_problem14(self):
-        pass
-
-    def test_problem15(self):
-        pass
-
+    def test_problems(self):
+        print(problem1(self.A, self.B))
+        print(problem2(self.A, self.B, self.C))
+        print(problem3(self.A, self.B, self.C))
+        print(problem4(self.x, self.y))
+        print(problem5(self.A))
+        print(problem6(self.rect))
+        print(problem7(self.inv))
+        print(problem8(self.inv, np.arange(2)))
+        print(problem9(self.inv, self.row))
+        print(problem10(self.A, 100))
+        self.assertEqual(1, problem11(self.A, 0, 1))
+        self.assertEqual(8 + 9 + 10 + 11, problem12(self.rect, 2))
+        self.assertEqual(1.5, problem13(self.rect, 0, 3))
+        print(problem14(np.matrix([[0, 1], [-2, -3]]), 2))
+        print(problem15(self.x, k=3, m=7, s=5))
 
 if __name__ == '__main__':
     unittest.main()
