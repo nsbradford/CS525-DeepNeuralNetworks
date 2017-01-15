@@ -46,17 +46,17 @@ def problem6 (A):
     return np.ones(A.shape[0])
 
 def problem7 (A):
-    """ Given (invertible) matrix A, compute A−1. """
+    """ Given invertible matrix A, compute A-1 """
     return np.linalg.inv(A)
 
 def problem8 (A, x):
-    """ Given square matrix A and column vector x, use numpy.linalg.solve to compute A−1x. 
+    """ Given square matrix A and column vector x, use numpy.linalg.solve to compute A-1x. 
         If Ax = b, then x = A-1b. If Ab = x, then b = A-1x
     """
     return np.linalg.solve(A, x)
 
 def problem9 (A, x):
-    """ Given square matrix A and row vector x, use numpy.linalg.solve to compute xA−1. 
+    """ Given square matrix A and row vector x, use numpy.linalg.solve to compute xA-1. 
         Hint: AB = (B^T A^T)^T.
         We also know that the inverse of a transpose == the tranpose of the inverse,
             so solve(A^T, b^T) = (A^T)-1 b^T = (A-1)^T b^T = (bA-1)^T
@@ -64,7 +64,7 @@ def problem9 (A, x):
     return np.transpose(np.linalg.solve(np.transpose(A), np.transpose(x)))
 
 def problem10 (A, alpha):
-    """ Given square matrix A and (scalar) α, compute A + αI, where I is the identity matrix 
+    """ Given square matrix A and (scalar) alpha, compute A + alpha I, where I is the identity matrix 
         with the same dimensions as A. Use numpy.eye.
     """
     return A + np.eye(A.shape[0]) * alpha
@@ -83,7 +83,7 @@ def problem12 (A, i):
 def problem13 (A, c, d):
     """ Given matrix A and scalars c, d, compute the arithmetic mean over all entries of A 
         that are between c and d (inclusive). 
-        In other words, if S = {(i,j) : c ≤ Aij ≤ d}, then compute SUM Aij. 
+        In other words, if S = {(i,j) : c <= Aij <= d}, then compute SUM Aij. 
         Use numpy.nonzero along with numpy.mean.
     """
     # nonzeroA = A[np.nonzero(A)] # TODO what if 0 is within c and d? what's the point of nonzero()?
@@ -91,7 +91,7 @@ def problem13 (A, c, d):
     return np.mean(A[mask])
 
 def problem14 (A, k):
-    """ Given an (n × n) matrix A and integer k, return an (n × k) matrix containing the 
+    """ Given an (n x n) matrix A and integer k, return an (n x k) matrix containing the 
         right-eigenvectors of A corresponding to the k largest eigenvalues of A. 
         Use numpy.linalg.eig to compute eigenvectors.
     """
@@ -107,7 +107,7 @@ def problem14 (A, k):
 
 def problem15 (x, k, m, s):
     """ Given a n-dimensional column vector x, an integer k, and positive scalars m, s, 
-            return an (n×k) matrix, each of whose columns is a sample from multidimensional 
+            return an (n x k) matrix, each of whose columns is a sample from multidimensional 
             Gaussian distribution N (x + mz, sI), where z is an n-dimensional column vector 
             containing all ones and I is the identity matrix. 
         Use either numpy.random.multivariate normal or numpy.random.randn.
