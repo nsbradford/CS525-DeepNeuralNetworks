@@ -7,7 +7,7 @@
     Runs on Python 3.5
 """
 
-import unittest
+# import unittest
 import numpy as np
 
 
@@ -83,12 +83,11 @@ def problem12 (A, i):
 def problem13 (A, c, d):
     """ Given matrix A and scalars c, d, compute the arithmetic mean over all entries of A 
         that are between c and d (inclusive). 
-        In other words, if S = {(i,j) : c <= Aij <= d}, then compute SUM Aij. 
+        In other words, if S = {(i,j) : c <= Aij <= d}, then compute (1/S) * SUM Aij
         Use numpy.nonzero along with numpy.mean.
     """
-    # nonzeroA = A[np.nonzero(A)] # TODO what if 0 is within c and d? what's the point of nonzero()?
     mask = (A >= c) & (A <= d)
-    return np.mean(A[mask])
+    return np.mean(A[np.nonzero(mask)])
 
 def problem14 (A, k):
     """ Given an (n x n) matrix A and integer k, return an (n x k) matrix containing the 
@@ -121,33 +120,33 @@ def problem15 (x, k, m, s):
     return np.transpose(sample) # make N x K matrix
 
 
-class HomeworkTest(unittest.TestCase):
+# class HomeworkTest(unittest.TestCase):
 
-    A = np.arange(4).reshape((2,2))
-    B = np.arange(4, 8).reshape((2,2))
-    C = np.arange(8, 12).reshape((2,2))
-    x = np.arange(5)
-    y = np.arange(5, 10)
-    rect = np.arange(12).reshape((3, 4))
-    inv = np.matrix([[4, 3], [1, 1]])
-    row = np.arange(2)
+#     A = np.arange(4).reshape((2,2))
+#     B = np.arange(4, 8).reshape((2,2))
+#     C = np.arange(8, 12).reshape((2,2))
+#     x = np.arange(5)
+#     y = np.arange(5, 10)
+#     rect = np.arange(12).reshape((3, 4))
+#     inv = np.array([[4, 3], [1, 1]])
+#     row = np.arange(2)
 
-    def test_problems(self):
-        print(problem1(self.A, self.B))
-        print(problem2(self.A, self.B, self.C))
-        print(problem3(self.A, self.B, self.C))
-        print(problem4(self.x, self.y))
-        print(problem5(self.A))
-        print(problem6(self.rect))
-        print(problem7(self.inv))
-        print(problem8(self.inv, np.arange(2)))
-        print(problem9(self.inv, self.row))
-        print(problem10(self.A, 100))
-        self.assertEqual(1, problem11(self.A, 0, 1))
-        self.assertEqual(8 + 9 + 10 + 11, problem12(self.rect, 2))
-        self.assertEqual(1.5, problem13(self.rect, 0, 3))
-        print(problem14(np.matrix([[0, 1], [-2, -3]]), 2))
-        print(problem15(self.x, k=3, m=7, s=5))
+#     def test_problems(self):
+#         print(problem1(self.A, self.B))
+#         print(problem2(self.A, self.B, self.C))
+#         print(problem3(self.A, self.B, self.C))
+#         print(problem4(self.x, self.y))
+#         print(problem5(self.A))
+#         print(problem6(self.rect))
+#         print(problem7(self.inv))
+#         print(problem8(self.inv, np.arange(2)))
+#         print(problem9(self.inv, self.row))
+#         print(problem10(self.A, 100))
+#         self.assertEqual(1, problem11(self.A, 0, 1))
+#         self.assertEqual(8 + 9 + 10 + 11, problem12(self.rect, 2))
+#         self.assertEqual(1.5, problem13(self.rect, 0, 3))
+#         print(problem14(np.matrix([[0, 1], [-2, -3]]), 2))
+#         print(problem15(self.x, k=3, m=7, s=5))
 
-if __name__ == '__main__':
-    unittest.main()
+# if __name__ == '__main__':
+#     unittest.main()
