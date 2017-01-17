@@ -5,9 +5,9 @@
 
     HW1: numpy exercises
     Runs on Python 3.5
+    Assume 0-based indexing.
 """
 
-# import unittest
 import numpy as np
 
 
@@ -95,14 +95,8 @@ def problem14 (A, k):
         Use numpy.linalg.eig to compute eigenvectors.
     """
     vals, vecs = np.linalg.eig(A)
-    combined_columns = np.vstack((vals, vecs))
-    transposed_rows = np.transpose(combined_columns)
-    tosort = transposed_rows[:, 0].flatten()
-    mask = list(np.argsort(tosort[0]).flat) # argsort seems to be misbehaving
-    sorted_rows = transposed_rows[mask]
-    k_rows = sorted_rows[vecs.shape[0] - k:, 1:] # drop the eigenvalue column too
-    eig_columns = np.transpose(k_rows)
-    return eig_columns # TODO need to worry about bounds of k?
+    indices = np.argpartition(vals, -k)[-k:]
+    return np.transpose(vecs[indices])
 
 def problem15 (x, k, m, s):
     """ Given a n-dimensional column vector x, an integer k, and positive scalars m, s, 
@@ -120,6 +114,9 @@ def problem15 (x, k, m, s):
     return np.transpose(sample) # make N x K matrix
 
 
+
+# import unittest
+
 # class HomeworkTest(unittest.TestCase):
 
 #     A = np.arange(4).reshape((2,2))
@@ -127,9 +124,11 @@ def problem15 (x, k, m, s):
 #     C = np.arange(8, 12).reshape((2,2))
 #     x = np.arange(5)
 #     y = np.arange(5, 10)
+#     large = np.arange(25).reshape((5,5))
 #     rect = np.arange(12).reshape((3, 4))
 #     inv = np.array([[4, 3], [1, 1]])
 #     row = np.arange(2)
+#     large = np.array([[1, 2, 1], [6, -1, 0], [-1, -2, -1]])
 
 #     def test_problems(self):
 #         print(problem1(self.A, self.B))
@@ -145,7 +144,7 @@ def problem15 (x, k, m, s):
 #         self.assertEqual(1, problem11(self.A, 0, 1))
 #         self.assertEqual(8 + 9 + 10 + 11, problem12(self.rect, 2))
 #         self.assertEqual(1.5, problem13(self.rect, 0, 3))
-#         print(problem14(np.matrix([[0, 1], [-2, -3]]), 2))
+#         print(problem14(self.large, 2))
 #         print(problem15(self.x, k=3, m=7, s=5))
 
 # if __name__ == '__main__':
