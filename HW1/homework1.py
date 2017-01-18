@@ -116,37 +116,37 @@ def problem15 (x, k, m, s):
 
 
 
-import unittest
+# import unittest
 
-class HomeworkTest(unittest.TestCase):
+# class HomeworkTest(unittest.TestCase):
 
-    A = np.arange(4).reshape((2,2))
-    B = np.arange(4, 8).reshape((2,2))
-    C = np.arange(8, 12).reshape((2,2))
-    x = np.arange(5)
-    y = np.arange(5, 10)
-    large = np.arange(25).reshape((5,5))
-    rect = np.arange(12).reshape((3, 4))
-    inv = np.array([[4, 3], [1, 1]])
-    row = np.arange(2)
-    large = np.array([[1, 2, 1], [6, -1, 0], [-1, -2, -1]])
+#     A = np.arange(4).reshape((2,2))
+#     B = np.arange(4, 8).reshape((2,2))
+#     C = np.arange(8, 12).reshape((2,2))
+#     x = np.arange(5)
+#     y = np.arange(5, 10)
+#     large = np.arange(25).reshape((5,5))
+#     rect = np.arange(12).reshape((3, 4))
+#     inv = np.array([[4, 3], [1, 1]])
+#     row = np.arange(2)
+#     large = np.array([[1, 2, 1], [6, -1, 0], [-1, -2, -1]])
 
-    def test_problems(self):
-        # print(problem1(self.A, self.B))
-        # print(problem2(self.A, self.B, self.C))
-        # print(problem3(self.A, self.B, self.C))
-        # print(problem4(self.x, self.y))
-        # print(problem5(self.A))
-        # print(problem6(self.rect))
-        # print(problem7(self.inv))
-        # print(problem8(self.inv, np.arange(2)))
-        # print(problem9(self.inv, self.row))
-        # print(problem10(self.A, 100))
-        # self.assertEqual(1, problem11(self.A, 0, 1))
-        # self.assertEqual(8 + 9 + 10 + 11, problem12(self.rect, 2))
-        # self.assertEqual(1.5, problem13(self.rect, 0, 3))
-        print(problem14(self.large, 2))
-        # print(problem15(self.x, k=3, m=7, s=5))
+#     def test_problems(self):
+#         print(problem1(self.A, self.B))
+#         print(problem2(self.A, self.B, self.C))
+#         print(problem3(self.A, self.B, self.C))
+#         print(problem4(self.x, self.y))
+#         print(problem5(self.A))
+#         print(problem6(self.rect))
+#         print(problem7(self.inv))
+#         print(problem8(self.inv, np.arange(2)))
+#         print(problem9(self.inv, self.row))
+#         print(problem10(self.A, 100))
+#         self.assertEqual(1, problem11(self.A, 0, 1))
+#         self.assertEqual(8 + 9 + 10 + 11, problem12(self.rect, 2))
+#         self.assertEqual(1.5, problem13(self.rect, 0, 3))
+#         print(problem14(self.large, 2))
+#         print(problem15(self.x, k=3, m=7, s=5))
 
-if __name__ == '__main__':
-    unittest.main()
+# if __name__ == '__main__':
+#     unittest.main()
