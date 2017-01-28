@@ -24,8 +24,8 @@ def gradientDescent (trainingFaces, trainingLabels, testingFaces, testingLabels,
     """
     print('Train 1-layer ANN with regularization alpha: ', alpha)
     w  = np.random.randn(trainingFaces.shape[1])
-    epsilon = 1e-6 # 0.000001
-    delta = 0.001
+    epsilon = 2e-6 # 0.000001
+    delta = 0.0001
     prevJ = J(w, trainingFaces, trainingLabels, alpha)
     diff = 1000
     count = 0
@@ -37,7 +37,7 @@ def gradientDescent (trainingFaces, trainingLabels, testingFaces, testingLabels,
         diff = prevJ - newJ
         prevJ = newJ
         count += 1
-        # if count % 1000 == 0: print('\t', newJ, diff) #print('...',) 
+        if count % 1000 == 0: print('\t', newJ, diff) #print('...',) 
     return w
 
 #==================================================================================================
@@ -98,7 +98,7 @@ def detectSmiles (w):
 
     while vc.grab():
         (tf,im) = vc.read()
-        # im = cv2.resize(im, (int(im.shape[1]/2), int(im.shape[0]/2)))  # Divide resolution by 2 for speed
+        im = cv2.resize(im, (int(im.shape[1]/2), int(im.shape[0]/2)))  # Divide resolution by 2 for speed
         imGray = cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)
         # print (imGray.shape)
         k = cv2.waitKey(30)
