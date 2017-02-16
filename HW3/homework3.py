@@ -34,7 +34,7 @@ def gradientDescent(trainingFaces, trainingLabels, testingFaces, testingLabels, 
         learning_rate =  epsilon 
         threshold = delta
     """
-    print('METHOD 2: Train 1-layer ANN with regularization alpha: ', alpha)
+    print('METHOD 2: Train 2-layer ANN with regularization alpha: ', alpha)
     sigma = np.sqrt(1.0 / trainingFaces.size) # = 1/24
     w  = np.random.randn(trainingFaces.shape[1]) * sigma
     learning_rate = 3e-5
@@ -49,7 +49,7 @@ def gradientDescent(trainingFaces, trainingLabels, testingFaces, testingLabels, 
         diff = prevJ - newJ
         prevJ = newJ
         count += 1
-        print('\t', count, '\tCost:', newJ, '\tDiff:', diff)
+        print('\t{} \tCost: {} \t Diff: {}'.format(count, newJ, diff))
     return w
 
 
@@ -117,24 +117,28 @@ def gradJ_new(w, faces, labels, alpha=0.0):
     return (1.0/n) * x.dot(predict - labels)
 
 
-def method4(trainingFaces, trainingLabels, testingFaces, testingLabels):
+def method4(trainingFaces, trainingLabels):
     """ Use Xavier initialization, where weights are randomly initialized to 
-            a normal distribution with mean 0 and Var(W) = 1/N_input ."""
+            a normal distribution with mean 0 and Var(W) = 1/N_input .
+        learning_rate =  epsilon 
+        threshold = delta
+    """
     alpha = 0
-    print('METHOD 4: Train 1-layer ANN with regularization alpha: ', alpha)
+    print('METHOD 4: Train 2-layer ANN with regularization alpha: ', alpha)
     sigma = np.sqrt(1.0 / trainingFaces.size) # = 1/24
     w  = np.random.randn(trainingFaces.shape[1]) * sigma
-    epsilon = 5e-2 # learning rate
-    delta = 1e-7 # threshold 
+    learning_rate =  0.2 # 0.25 is suggested learning rate
     prevJ = J_new(w, trainingFaces, trainingLabels, alpha)
     diff = 1e10
-    while diff > delta:
-        update = epsilon * gradJ_new(w, trainingFaces, trainingLabels, alpha)
+    n_iterations = 15000
+    for i in range(n_iterations):
+        update = learning_rate * gradJ_new(w, trainingFaces, trainingLabels, alpha)
         w = w - update
         newJ = J_new(w, trainingFaces, trainingLabels, alpha)
         diff = prevJ - newJ
         prevJ = newJ
-        print('\t', newJ, diff)
+        if i > n_iterations - 21: 
+            print('\t{} \tCost: {} \t Diff: {}'.format(i, round(newJ, 8), diff))
     return w
 
 
@@ -173,16 +177,18 @@ if __name__ == "__main__":
         testingFaces = np.load(prefix + "testingFaces.npy")
         testingLabels = np.load(prefix + "testingLabels.npy")
 
-    # Problem #1
-    whitenedFaces = whiten(trainingFaces)
-    testWhitenedCovEigenvalues(whitenedFaces)
-    whitenedTestingFaces = testingFaces.dot(computeWhiteningTransform(trainingFaces))
-    w2 = method2(whitenedFaces, trainingLabels, testingFaces, testingLabels)
-    reportCosts(w2, whitenedFaces, trainingLabels, whitenedTestingFaces, testingLabels)
-
     # Problem #2
-    # w4 = method4(trainingFaces, trainingLabels, testingFaces, testingLabels)
-    # testLogisticRegression(w4, trainingFaces, trainingLables)
+    input('Press any key to demo Problem 2...')
+    # whitenedFaces = whiten(trainingFaces)
+    # testWhitenedCovEigenvalues(whitenedFaces)
+    # whitenedTestingFaces = testingFaces.dot(computeWhiteningTransform(trainingFaces))
+    # w2 = method2(whitenedFaces, trainingLabels, testingFaces, testingLabels)
+    # reportCosts(w2, whitenedFaces, trainingLabels, whitenedTestingFaces, testingLabels)
+
+    # Problem #3
+    input('Press any key to demo Problem 3...')
+    w4 = method4(trainingFaces, trainingLabels)
+    testLogisticRegression(w4, trainingFaces, trainingLabels)
     
     # for i, w in enumerate([ w2, w4 ]):
     #     print('Costs for method', i+1, ':')
