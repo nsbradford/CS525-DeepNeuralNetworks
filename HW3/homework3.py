@@ -137,8 +137,8 @@ def method4(trainingFaces, trainingLabels):
         newJ = J_new(w, trainingFaces, trainingLabels, alpha)
         diff = prevJ - newJ
         prevJ = newJ
-        if i > n_iterations - 21: 
-            print('\t{} \tCost: {} \t Diff: {}'.format(i, round(newJ, 8), diff))
+        if i > n_iterations - 22: 
+            print('\t{} \tCost: {} \t Diff: {}'.format(i+1, newJ, diff))
     return w
 
 
@@ -149,14 +149,28 @@ def testLogisticRegression(w4, trainingFaces, trainingLables):
         Compare the LogisticRegression to the NN by grabbing the coefficients from it,
             using that as the W vector, and running it through the cost function.
     """ 
+    idealScore = 0.217
+    scoreGradDescent = J_new(w4, trainingFaces, trainingLabels)
     sigma = np.sqrt(1.0 / trainingFaces.size) # = 24
     w  = np.random.randn(trainingFaces.shape[1]) * sigma
     point_to_check = w
     gradient_check = scipy.optimize.check_grad(J_new, gradJ_new, point_to_check, 
                         trainingFaces, trainingLabels)
-    print(gradient_check)
-    # C = 1e10 # inverse of alpha, the regularization rate
-    # model = LogisticRegression(C=C)
+    print('check_grad() value: {}'.format(gradient_check))
+    C = 1e10 # inverse of alpha, the regularization rate
+    model = LogisticRegression(C=C, fit_intercept=False)
+    model.fit(trainingFaces, trainingLabels)
+    lr_weights = model.coef_.flatten()
+    assert w4.shape == lr_weights.shape
+    scoreLogisticRegression = J_new(lr_weights, trainingFaces, trainingLabels)
+    print('Gradient Descent training score:   {}'.format(scoreGradDescent))
+    print('LogisticRegression training score: {}'.format(scoreLogisticRegression))
+    assert np.isclose(idealScore, scoreLogisticRegression, atol=1e-3), 'Ideal score is {}'.format(idealScore)
+
+    # compare weights by hand
+    # for i in range(lr_weights.size):
+    #     print('gradDescent: {} \t logRegression: {}'.format(w4[i], lr_weights[i]))
+
 
 
 #==================================================================================================
