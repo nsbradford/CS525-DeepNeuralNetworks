@@ -8,6 +8,83 @@ import scipy
 from sklearn.linear_model import LogisticRegression
 
 
+#==================================================================================================
+# Problem 2
+
+def J(w, faces, labels, alpha=0.0):
+    """ J = 0.5 * [Xw-y]^2 
+        Update to use sigmoid and regularized cross-entropy loss function (2-class):
+            J(w) = -(1/m) [ y_j * log(Xw) + (1 - y) * log(1 - Xw) ] + (alpha / 2) * w_T * w
+    """
+    # print([x.shape for x in [w, faces , labels]])
+    inner = np.dot(faces, w) - labels
+    return 0.5 * np.dot(inner, inner.T) + (alpha * np.dot(w, w))
+
+
+def gradJ(w, faces, labels, alpha=0.0):
+    """ gradJ = 0.5 * 2 * X.T(Xw - y) = X.T(Xw-y) + Alpha * w """
+    inner = np.dot(faces, w) - labels
+    return np.dot(faces.T, inner) + (alpha * w)
+
+
+def gradientDescent(trainingFaces, trainingLabels, testingFaces, testingLabels, alpha=0.0):
+    """ Use Xavier initialization, where weights are randomly initialized to 
+            a normal distribution with mean 0 and Var(W) = 1/N_input.
+        Gradient descent is then applied until gain is < epsilon.
+        learning_rate =  epsilon 
+        threshold = delta
+    """
+    print('METHOD 2: Train 1-layer ANN with regularization alpha: ', alpha)
+    sigma = np.sqrt(1.0 / trainingFaces.size) # = 1/24
+    w  = np.random.randn(trainingFaces.shape[1]) * sigma
+    learning_rate = 3e-5
+    threshold = 1e-3
+    prevJ = J(w, trainingFaces, trainingLabels, alpha)
+    diff = 1000
+    count = 0
+    while diff > threshold:
+        update = learning_rate * gradJ(w, trainingFaces, trainingLabels, alpha)
+        w = w - update
+        newJ = J(w, trainingFaces, trainingLabels, alpha)
+        diff = prevJ - newJ
+        prevJ = newJ
+        count += 1
+        print('\t', count, '\tCost:', newJ, '\tDiff:', diff)
+    return w
+
+
+def method2(trainingFaces, trainingLabels, testingFaces, testingLabels):
+    return gradientDescent(trainingFaces, trainingLabels, testingFaces, testingLabels)
+
+
+def whiten(data):
+    """ L = evecs * evals^(-1/2) """
+    print('Whiten data...')
+    assert data.shape == (2000,576), 'data.shape is ' + str(data.shape)
+    constant = 1e-3
+    cov = np.cov(data.T) + constant * np.eye(data.shape[1])
+    # assert cov.shape == (576, 576), 'evals.shape is ' + str(evals.shape)
+    evals, evecs = np.linalg.eigh(cov)
+    # assert evals.shape == (576,), 'evals.shape is ' + str(evals.shape)
+    evals_m = np.diagflat(np.float_power(evals, -0.5))
+    # assert evals_m.shape == (576,576), 'evals_m.shape is ' + str(evals_m.shape)
+    W = np.dot(evecs, evals_m)
+    whitened = np.dot(data, W)
+    return whitened
+
+
+def testWhitenedCovEigenvalues(whitenedFaces):
+    """ Verify that the eigenvalues of the covariance matrix of the 
+        transformed faces are all close to 1.
+    """ 
+    newCov = np.cov(whitenedFaces.T)
+    newEvals, newEvecs = np.linalg.eigh(newCov)
+    print(newEvecs)
+
+
+#==================================================================================================
+# Problem 3
+
 def sigmoid(z):
   return 1.0 / (1 + np.exp(-1 * z))
 
@@ -33,106 +110,45 @@ def gradJ_new(w, faces, labels, alpha=0.0):
     return (1.0/n) * x.dot(predict - labels)
 
 
-def method4 (trainingFaces, trainingLabels, testingFaces, testingLabels):
-    alpha = 0#1e-3
-    print('USE METHOD 4')
-    print('Train 1-layer ANN with regularization alpha: ', alpha)
-
-    # Use Xavier initialization, where Var(W) = 1/N_input
-    sigma = np.sqrt(1.0 / trainingFaces.size) # = 24
+def method4(trainingFaces, trainingLabels, testingFaces, testingLabels):
+    """ Use Xavier initialization, where weights are randomly initialized to 
+            a normal distribution with mean 0 and Var(W) = 1/N_input ."""
+    alpha = 0
+    print('METHOD 4: Train 1-layer ANN with regularization alpha: ', alpha)
+    sigma = np.sqrt(1.0 / trainingFaces.size) # = 1/24
     w  = np.random.randn(trainingFaces.shape[1]) * sigma
-    epsilon = 5e-2 # 0.000001 # learning rate
+    epsilon = 5e-2 # learning rate
     delta = 1e-7 # threshold 
     prevJ = J_new(w, trainingFaces, trainingLabels, alpha)
-    diff = 1000
-    count = 0
+    diff = 1e10
     while diff > delta:
         update = epsilon * gradJ_new(w, trainingFaces, trainingLabels, alpha)
         w = w - update
         newJ = J_new(w, trainingFaces, trainingLabels, alpha)
         diff = prevJ - newJ
         prevJ = newJ
-        count += 1
-        if count % 100 == 0: print('\t', newJ, diff) #print('...',) 
+        print('\t', newJ, diff)
     return w
 
 
-def whiten(data):
-    """ L = evecs * evals^(-1/2) """
-    assert data.shape == (2000,576), 'data.shape is ' + str(data.shape)
-    constant = 1e-3
-    cov = np.cov(data.T) + constant * np.eye(data.shape[1])
-    # assert cov.shape == (576, 576), 'evals.shape is ' + str(evals.shape)
-    evals, evecs = np.linalg.eigh(cov)
-    # assert evals.shape == (576,), 'evals.shape is ' + str(evals.shape)
-    evals_m = np.diagflat(np.float_power(evals, -0.5))
-    # assert evals_m.shape == (576,576), 'evals_m.shape is ' + str(evals_m.shape)
-    W = np.dot(evecs, evals_m)
-    whitened = np.dot(data, W)
-    return whitened
+def testLogisticRegression(w4, trainingFaces, trainingLables):
+    """ Use check_grad to verify the gradient expression is correct.
+        Check final solution by comparing against sklearn.linear_model.LogisticRegression,
+            where the C (inverse of alpha) is very large and fit_intercept term = False.
+        Compare the LogisticRegression to the NN by grabbing the coefficients from it,
+            using that as the W vector, and running it through the cost function.
+    """ 
+    sigma = np.sqrt(1.0 / trainingFaces.size) # = 24
+    w  = np.random.randn(trainingFaces.shape[1]) * sigma
+    point_to_check = w
+    gradient_check = scipy.optimize.check_grad(J_new, gradJ_new, point_to_check, 
+                        trainingFaces, trainingLabels)
+    print(gradient_check)
+    # C = 1e10 # inverse of alpha, the regularization rate
+    # model = LogisticRegression(C=C)
 
 
 #==================================================================================================
-
-def J(w, faces, labels, alpha=0.0):
-    """ J = 0.5 * [Xw-y]^2 
-        Update to use sigmoid and regularized cross-entropy loss function (2-class):
-            J(w) = -(1/m) [ y_j * log(Xw) + (1 - y) * log(1 - Xw) ] + (alpha / 2) * w_T * w
-    """
-    # print([x.shape for x in [w, faces , labels]])
-    inner = np.dot(faces, w) - labels
-    return 0.5 * np.dot(inner, inner.T) + (alpha * np.dot(w, w))
-
-
-def gradJ(w, faces, labels, alpha=0.0):
-    """ gradJ = 0.5 * 2 * X.T(Xw - y) = X.T(Xw-y) + Alpha * w """
-    inner = np.dot(faces, w) - labels
-    return np.dot(faces.T, inner) + (alpha * w)
-
-
-def gradientDescent (trainingFaces, trainingLabels, testingFaces, testingLabels, alpha=0.0):
-    """ Random initialization from a standard normal distribution.
-        Gradient descent is then applied until gain is < epsilon. 
-    """
-    print('Train 1-layer ANN with regularization alpha: ', alpha)
-    w  = np.random.randn(trainingFaces.shape[1])
-    epsilon = 2e-5 # 0.000001 # learning rate
-    delta = 1e-3 #0.0001 
-    prevJ = J(w, trainingFaces, trainingLabels, alpha)
-    diff = 1000
-    count = 0
-    # print(diff, delta)
-    while diff > delta:
-        update = epsilon * gradJ(w, trainingFaces, trainingLabels, alpha)
-        w = w - update
-        newJ = J(w, trainingFaces, trainingLabels, alpha)
-        diff = prevJ - newJ
-        prevJ = newJ
-        count += 1
-        if count % 10 == 0: print('\t', count, newJ, diff) #print('...',) 
-    return w
-
-#==================================================================================================
-
-def method1 (trainingFaces, trainingLabels, testingFaces, testingLabels):
-    """ Set gradient to 0 and solve. 
-        w = (X.T * X)^-1 * (X.T * y)
-        Use the fact that for Ax = b, x = A-1b -> np.solve(A, b)
-    """
-    # print([x.shape for x in [trainingFaces, trainingLabels, testingFaces, testingLabels]])
-    leftTerm = np.dot(trainingFaces.T, trainingFaces)
-    rightTerm = np.dot(trainingFaces.T, trainingLabels)
-    return np.linalg.solve(leftTerm, rightTerm)
-
-
-def method2 (trainingFaces, trainingLabels, testingFaces, testingLabels):
-    return gradientDescent(trainingFaces, trainingLabels, testingFaces, testingLabels)
-
-
-def method3 (trainingFaces, trainingLabels, testingFaces, testingLabels):
-    alpha = 1e3
-    return gradientDescent(trainingFaces, trainingLabels, testingFaces, testingLabels, alpha)
-
 
 def reportCosts (w, trainingFaces, trainingLabels, testingFaces, testingLabels, alpha = 0.):
     print("Training cost: {}".format(J(w, trainingFaces, trainingLabels, alpha)))
@@ -199,27 +215,16 @@ if __name__ == "__main__":
         testingFaces = np.load(prefix + "testingFaces.npy")
         testingLabels = np.load(prefix + "testingLabels.npy")
 
+    # Problem #1
     whitenedFaces = whiten(trainingFaces)
-    # verify that the eigenvalues of hte covariance matrix of the transformed faces are all close to 1
-    newCov = np.cov(whitenedFaces.T)
-    newEvals, newEvecs = np.linalg.eigh(newCov)
-    # print(newEvecs)
-
-    # w1 = method1(trainingFaces, trainingLabels, testingFaces, testingLabels)
+    # testWhitenedCovEigenvalues(whitenedFaces)
     w2 = method2(whitenedFaces, trainingLabels, testingFaces, testingLabels)
-    # w3 = method3(trainingFaces, trainingLabels, testingFaces, testingLabels)
+
+    # Problem #2
     # w4 = method4(trainingFaces, trainingLabels, testingFaces, testingLabels)
-
-    sigma = np.sqrt(1.0 / trainingFaces.size) # = 24
-    w  = np.random.randn(trainingFaces.shape[1]) * sigma
-    C = 1e10 # inverse of alpha, the regularization rate
-    model = LogisticRegression(C=C)
-    point_to_check = w
-    gradient_check = scipy.optimize.check_grad(J_new, gradJ_new, point_to_check, trainingFaces, trainingLabels)
-    print(gradient_check)
-
-    # for i, w in enumerate([ w1, w2, w3 , w4]):
-    # for i, w in enumerate([ w2]):
+    # testLogisticRegression(w4, trainingFaces, trainingLables)
+    
+    # for i, w in enumerate([ w2, w4 ]):
     #     print('Costs for method', i+1, ':')
     #     reportCosts(w, trainingFaces, trainingLabels, testingFaces, testingLabels)
     
