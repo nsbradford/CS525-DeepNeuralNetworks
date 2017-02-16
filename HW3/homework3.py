@@ -57,19 +57,24 @@ def method2(trainingFaces, trainingLabels, testingFaces, testingLabels):
     return gradientDescent(trainingFaces, trainingLabels, testingFaces, testingLabels)
 
 
-def whiten(data):
+def computeWhiteningTransform(data):
     """ L = evecs * evals^(-1/2) """
     print('Whiten data...')
     assert data.shape == (2000,576), 'data.shape is ' + str(data.shape)
     constant = 1e-3
     cov = np.cov(data.T) + constant * np.eye(data.shape[1])
-    # assert cov.shape == (576, 576), 'evals.shape is ' + str(evals.shape)
+    assert cov.shape == (576, 576), 'evals.shape is ' + str(evals.shape)
     evals, evecs = np.linalg.eigh(cov)
-    # assert evals.shape == (576,), 'evals.shape is ' + str(evals.shape)
+    assert evals.shape == (576,), 'evals.shape is ' + str(evals.shape)
     evals_m = np.diagflat(np.float_power(evals, -0.5))
-    # assert evals_m.shape == (576,576), 'evals_m.shape is ' + str(evals_m.shape)
-    W = np.dot(evecs, evals_m)
-    whitened = np.dot(data, W)
+    assert evals_m.shape == (576,576), 'evals_m.shape is ' + str(evals_m.shape)
+    L = np.dot(evecs, evals_m)
+    return L
+
+
+def whiten(data):
+    L = computeWhiteningTransform(data)
+    whitened = np.dot(data, L)
     return whitened
 
 
@@ -77,9 +82,11 @@ def testWhitenedCovEigenvalues(whitenedFaces):
     """ Verify that the eigenvalues of the covariance matrix of the 
         transformed faces are all close to 1.
     """ 
+    print('testWhitenedCovEigenvalues()...')
     newCov = np.cov(whitenedFaces.T)
+    assert newCov.shape == (576, 576)
     newEvals, newEvecs = np.linalg.eigh(newCov)
-    print(newEvecs)
+    print(newEvals)
 
 
 #==================================================================================================
@@ -155,55 +162,6 @@ def reportCosts (w, trainingFaces, trainingLabels, testingFaces, testingLabels, 
     print("Testing cost:  {}".format(J(w, testingFaces, testingLabels, alpha)))
 
 
-# Accesses the web camera, displays a window showing the face, and classifies smiles in real time
-# Requires OpenCV.
-def detectSmiles (w):
-    # Given the image captured from the web camera, classify the smile
-    def classifySmile (im, imGray, faceBox, w):
-        # Extract face patch as vector
-        face = imGray[faceBox[1]:faceBox[1]+faceBox[3], faceBox[0]:faceBox[0]+faceBox[2]]
-        face = cv2.resize(face, (24, 24))
-        face = (face - np.mean(face)) / np.std(face)  # Normalize
-        face = np.reshape(face, face.shape[0]*face.shape[1])
-
-        # Classify face patch
-        yhat = w.dot(face)
-        print(yhat)
-
-        # Draw result as colored rectangle
-        THICKNESS = 3
-        green = 128 + (yhat - 0.5) * 255
-        color = (0, green, 255 - green)
-        pt1 = (faceBox[0], faceBox[1])
-        pt2 = (faceBox[0]+faceBox[2], faceBox[1]+faceBox[3])
-        cv2.rectangle(im, pt1, pt2, color, THICKNESS)
-
-    # Starting video capture
-    vc = cv2.VideoCapture()
-    vc.open(0)
-    path = "/Users/nicholasbradford/opencv/data/haarcascades/haarcascade_frontalface_alt2.xml"
-    faceDetector = cv2.CascadeClassifier(path) # TODO update path
-
-    while vc.grab():
-        (tf,im) = vc.read()
-        im = cv2.resize(im, (int(im.shape[1]/2), int(im.shape[0]/2)))  # Divide resolution by 2 for speed
-        imGray = cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)
-        # print (imGray.shape)
-        k = cv2.waitKey(30)
-        if k >= 0 and chr(k) == 'q':
-            print("quitting")
-            break
-
-        # # Detect faces
-        faceBoxes = faceDetector.detectMultiScale(imGray)
-        for faceBox in faceBoxes:
-            classifySmile(im, imGray, faceBox, w)
-        cv2.imshow("WebCam", im)
-
-    cv2.destroyWindow("WebCam")
-    vc.release()
-
-
 if __name__ == "__main__":
     np.set_printoptions(threshold=np.nan)
     # Load data
@@ -217,8 +175,10 @@ if __name__ == "__main__":
 
     # Problem #1
     whitenedFaces = whiten(trainingFaces)
-    # testWhitenedCovEigenvalues(whitenedFaces)
+    testWhitenedCovEigenvalues(whitenedFaces)
+    whitenedTestingFaces = testingFaces.dot(computeWhiteningTransform(trainingFaces))
     w2 = method2(whitenedFaces, trainingLabels, testingFaces, testingLabels)
+    reportCosts(w2, whitenedFaces, trainingLabels, whitenedTestingFaces, testingLabels)
 
     # Problem #2
     # w4 = method4(trainingFaces, trainingLabels, testingFaces, testingLabels)
@@ -227,5 +187,3 @@ if __name__ == "__main__":
     # for i, w in enumerate([ w2, w4 ]):
     #     print('Costs for method', i+1, ':')
     #     reportCosts(w, trainingFaces, trainingLabels, testingFaces, testingLabels)
-    
-    # detectSmiles(w2)  # Requires OpenCV
