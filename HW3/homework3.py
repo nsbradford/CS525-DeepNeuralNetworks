@@ -7,8 +7,72 @@ import math
 import scipy
 from sklearn.linear_model import LogisticRegression
 
-def sigmoid(x):
-  return 1 / (1 + math.exp(-x))
+
+def sigmoid(z):
+  return 1.0 / (1 + np.exp(-1 * z))
+
+
+def J_new(w, faces, labels, alpha=0.0):
+    """ yhat = sigmoid(Xw)
+        J(w) = -1/m * sum { y_j log yhat_j + (1-y_j)log(1-yhat_y) } + alpha/2 * w_t * w
+        J(w) = -1/m * y * log(yhat) + (1-y) * log(1-yhat) + alpha/2 * w_t * w
+    """
+    m = labels.size
+    predict = sigmoid(faces.dot(w))
+    first = labels.dot(np.log(predict))
+    second = (1 - labels).dot(np.log(1 - predict))
+    reg = 0.5 * alpha * np.dot(w, w)
+    return (-1.0/m) * (first + second) + reg
+
+
+def gradJ_new(w, faces, labels, alpha=0.0):
+    """ """
+    x = faces.T
+    n = labels.size
+    predict = sigmoid(x.T.dot(w))
+    return (1.0/n) * x.dot(predict - labels)
+
+
+def method4 (trainingFaces, trainingLabels, testingFaces, testingLabels):
+    alpha = 0#1e-3
+    print('USE METHOD 4')
+    print('Train 1-layer ANN with regularization alpha: ', alpha)
+
+    # Use Xavier initialization, where Var(W) = 1/N_input
+    sigma = np.sqrt(1.0 / trainingFaces.size) # = 24
+    w  = np.random.randn(trainingFaces.shape[1]) * sigma
+    epsilon = 5e-2 # 0.000001 # learning rate
+    delta = 1e-7 # threshold 
+    prevJ = J_new(w, trainingFaces, trainingLabels, alpha)
+    diff = 1000
+    count = 0
+    while diff > delta:
+        update = epsilon * gradJ_new(w, trainingFaces, trainingLabels, alpha)
+        w = w - update
+        newJ = J_new(w, trainingFaces, trainingLabels, alpha)
+        diff = prevJ - newJ
+        prevJ = newJ
+        count += 1
+        if count % 100 == 0: print('\t', newJ, diff) #print('...',) 
+    return w
+
+
+def whiten(data):
+    """ L = evecs * evals^(-1/2) """
+    assert data.shape == (2000,576), 'data.shape is ' + str(data.shape)
+    constant = 1e-3
+    cov = np.cov(data.T) + constant * np.eye(data.shape[1])
+    # assert cov.shape == (576, 576), 'evals.shape is ' + str(evals.shape)
+    evals, evecs = np.linalg.eigh(cov)
+    # assert evals.shape == (576,), 'evals.shape is ' + str(evals.shape)
+    evals_m = np.diagflat(np.float_power(evals, -0.5))
+    # assert evals_m.shape == (576,576), 'evals_m.shape is ' + str(evals_m.shape)
+    W = np.dot(evecs, evals_m)
+    whitened = np.dot(data, W)
+    return whitened
+
+
+#==================================================================================================
 
 def J(w, faces, labels, alpha=0.0):
     """ J = 0.5 * [Xw-y]^2 
@@ -32,8 +96,8 @@ def gradientDescent (trainingFaces, trainingLabels, testingFaces, testingLabels,
     """
     print('Train 1-layer ANN with regularization alpha: ', alpha)
     w  = np.random.randn(trainingFaces.shape[1])
-    epsilon = 5e-6 # 0.000001 # learning rate
-    delta = 0.0001 
+    epsilon = 2e-5 # 0.000001 # learning rate
+    delta = 1e-3 #0.0001 
     prevJ = J(w, trainingFaces, trainingLabels, alpha)
     diff = 1000
     count = 0
@@ -45,7 +109,7 @@ def gradientDescent (trainingFaces, trainingLabels, testingFaces, testingLabels,
         diff = prevJ - newJ
         prevJ = newJ
         count += 1
-        if count % 1 == 0: print('\t', newJ, diff) #print('...',) 
+        if count % 10 == 0: print('\t', count, newJ, diff) #print('...',) 
     return w
 
 #==================================================================================================
@@ -124,39 +188,6 @@ def detectSmiles (w):
     vc.release()
 
 
-    # np.cov(data.T) np.dot(data.T, data)
-    # sqrt_evals = np.sqrt(evals_m) # scipy.linalg.sqrtm(evals_m)
-    # W = np.transpose(np.linalg.solve(np.transpose(evecs), np.transpose(sqrt_evals)))
-
-def whiten(data):
-#     """ L = evecs * evals^(-1/2) """
-    assert data.shape == (2000,576), 'data.shape is ' + str(data.shape)
-    constant = 1e-3
-    cov = np.cov(data.T) + constant * np.eye(data.shape[1])
-    # assert cov.shape == (576, 576), 'evals.shape is ' + str(evals.shape)
-    evals, evecs = np.linalg.eigh(cov)
-    # assert evals.shape == (576,), 'evals.shape is ' + str(evals.shape)
-    evals_m = np.diagflat(np.float_power(evals, -0.5))
-    # assert evals_m.shape == (576,576), 'evals_m.shape is ' + str(evals_m.shape)
-    W = np.dot(evecs, evals_m)
-    whitened = np.dot(data, W)
-
-    # verify that the eigenvalues of hte covariance matrix of the transformed faces are all close to 1
-    newCov = np.cov(whitened)
-    newEvals, newEvecs = np.linalg.eigh(newCov)
-    # print (newCov)
-    print(newEvals)
-    # error_message = 'eigvals of covariance matrix of transformed faces != 1 : \n' + str(newEvals)
-    # assert np.allclose(np.ones(newEvals.size), newEvals), error_message
-    return whitened
-
-
-def check_grad():
-    # use scipy.optimize.check_grad
-    C = 1000.0 # inverse of alpha, the regularization rate
-    model = LogisticRegression(C=C)
-    pass #TODO
-
 if __name__ == "__main__":
     np.set_printoptions(threshold=np.nan)
     # Load data
@@ -169,13 +200,27 @@ if __name__ == "__main__":
         testingLabels = np.load(prefix + "testingLabels.npy")
 
     whitenedFaces = whiten(trainingFaces)
+    # verify that the eigenvalues of hte covariance matrix of the transformed faces are all close to 1
+    newCov = np.cov(whitenedFaces.T)
+    newEvals, newEvecs = np.linalg.eigh(newCov)
+    # print(newEvecs)
 
-    w1 = method1(trainingFaces, trainingLabels, testingFaces, testingLabels)
+    # w1 = method1(trainingFaces, trainingLabels, testingFaces, testingLabels)
     w2 = method2(whitenedFaces, trainingLabels, testingFaces, testingLabels)
-    w3 = method3(trainingFaces, trainingLabels, testingFaces, testingLabels)
+    # w3 = method3(trainingFaces, trainingLabels, testingFaces, testingLabels)
+    # w4 = method4(trainingFaces, trainingLabels, testingFaces, testingLabels)
 
-    for i, w in enumerate([ w1, w2, w3 ]):
-        print('Costs for method', i+1, ':')
-        reportCosts(w, trainingFaces, trainingLabels, testingFaces, testingLabels)
+    sigma = np.sqrt(1.0 / trainingFaces.size) # = 24
+    w  = np.random.randn(trainingFaces.shape[1]) * sigma
+    C = 1e10 # inverse of alpha, the regularization rate
+    model = LogisticRegression(C=C)
+    point_to_check = w
+    gradient_check = scipy.optimize.check_grad(J_new, gradJ_new, point_to_check, trainingFaces, trainingLabels)
+    print(gradient_check)
+
+    # for i, w in enumerate([ w1, w2, w3 , w4]):
+    # for i, w in enumerate([ w2]):
+    #     print('Costs for method', i+1, ':')
+    #     reportCosts(w, trainingFaces, trainingLabels, testingFaces, testingLabels)
     
-    detectSmiles(w3)  # Requires OpenCV
+    # detectSmiles(w2)  # Requires OpenCV
