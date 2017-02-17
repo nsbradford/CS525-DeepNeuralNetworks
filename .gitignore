@@ -1,6 +1,9 @@
 
 # Created by https://www.gitignore.io/api/python
 
+# Specific to this project
+HW4/mnist_data
+
 # MacOS
 .DS_Store
 
