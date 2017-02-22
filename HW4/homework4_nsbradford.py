@@ -13,6 +13,7 @@
 """
 
 import numpy as np
+from sklearn.metrics import accuracy_score
 
 
 def load_data():
@@ -31,23 +32,24 @@ def load_data():
     test_data = np.load(prefix + "mnist_test_images.npy")
     test_labels = np.load(prefix + "mnist_test_labels.npy")
     assert train_data.shape == (55000, 784) and train_labels.shape == (55000, 10)
-    assert train_data.shape == (10000, 784) and test_labels.shape == (10000, 10)
+    assert test_data.shape == (10000, 784) and test_labels.shape == (10000, 10), str(train_data.shape) + str(test_labels.shape)
     return train_data, train_labels, test_data, test_labels
 
 
-def softmax(x, wk, w):
+def softmax(x, wk, bottom):
     """ Softmax: exp(x.T.dot(w_k)) / SUM { exp(x.T.dot(w_k))} """
-    top = np.exp(x.T.dot(wk))
-    i = 0
-    w_i = w[:, i]
-    bottom = np.exp(x.T.dot(w_i))
-    for i in range(1, 10):
-        w_i = w[:, i]
-        bottom += np.exp(x.T.dot(w_i))
-    return top / bottom
+    print('.', end='', flush=True)
+    assert x.shape[1] == 784
+    assert wk.shape == (784,)
+    # assert w.shape == (784, 10)
+    top = np.exp(x.dot(wk))
+    # bottom_vec = exp_xdotw
+    # assert bottom_vec.shape == (x.shape[0],10), str(bottom_vec.shape)
+    
+    return np.divide(top, bottom) #element-wise
 
 
-def J(w, data, labels):
+def J(w, data, labels, alpha=0):
     """ Computes cross-entropy loss function.
         J(w1, ..., w10) = -1/m SUM(j=1 to m) { SUM(k=1 to 10) { y } }
         Args:
@@ -57,36 +59,44 @@ def J(w, data, labels):
         Returns:
             J (float)
     """
-    d = data.shape[1]
-    m = labels.shape[1]
-    assert d == 10
-    scale = -1.0 / m
+    print('\tJ()...')
+    output_dim = labels.shape[1]
+    m = data.shape[0]
+    assert output_dim == 10, str(data.shape)
     cost = 0
-    # TODO how to vectorize inner softmax() calculation?
-    for j in range(m):
-        for k in d:
-            wk = w[:, k]
-            cost += labels[j, k] * np.log(softmax(x, wk, w))
+    # TODO vectorize over each of 10 outputs
+    bottom_vec = np.exp(data.dot(w))
+    bottom = np.sum(bottom_vec, axis=1) # sum of each row = sum for each dimension
+    for k in range(output_dim):
+        wk = w[:, k]
+        y_k = labels[:, k]
+        yhat = np.log(softmax(x=data, wk=wk, bottom=bottom))
+        cost += (-1.0 / m) * y_k.dot(yhat)
     return cost
 
 
-def gradJ(w, data, labels):
+def gradJ(w, data, labels, alpha=0.0):
     """ Compute gradient of cross-entropy loss function. 
         For one training example: dJ/dw = (yhat - yi)x = SUM(1 to m) { yhat_i^(j) - y_i^(j)}
     """
-    d = data.shape[1]
-    m = labels.shape[1]
-    i = 0
-    wk = w[:, i]
-    grad += (softmax(x, wk, w) - labels[j, i]) 
-    # TODO how to vectorize inner softmax() calculation?
-    for j in range(1, m):
-        for i in d:
-            wk = w[:, i]
-            grad += (softmax(x, wk, w) - labels[j, i])
-    return grad
+    print('\tgradJ()...')
+    output_dim = labels.shape[1]
+    grad = []
+    # TODO vectorize over each of 10 outputs
+    bottom_vec = np.exp(data.dot(w))
+    bottom = np.sum(bottom_vec, axis=1) # sum of each row = sum for each dimension
+    for k in range(output_dim):
+        wk = w[:, k]
+        yhat_k = softmax(x=data, wk=wk, bottom=bottom)
+        y_k = labels[:, k]
+        inner = (yhat_k - y_k)
+        assert inner.shape == (data.shape[0],), str(inner.shape)
+        grad_k = inner.dot(data)
+        grad.append(grad_k)
+    answer = np.array(grad).T
+    assert answer.shape == (784, 10), str(answer.shape)
+    return answer
     
-
 
 def gradient_descent(train_data, train_labels, alpha=0.0):
     """ Use Xavier initialization, where weights are randomly initialized to 
@@ -95,24 +105,22 @@ def gradient_descent(train_data, train_labels, alpha=0.0):
         learning_rate =  epsilon 
         threshold = delta
     """
-    return np.ones(784, 10)
+    # return np.ones((784, 10))
 
-    print('METHOD 2: Train 2-layer ANN with regularization alpha: ', alpha)
-    sigma = np.sqrt(1.0 / trainingFaces.size) # = 1/24
-    w  = np.random.randn(trainingFaces.shape[1]) * sigma
-    learning_rate = 3e-5
-    threshold = 1e-3
-    prevJ = J(w, trainingFaces, trainingLabels, alpha)
-    diff = 1000
-    count = 0
-    while diff > threshold:
-        update = learning_rate * gradJ(w, trainingFaces, trainingLabels, alpha)
+    print('Train 2-layer ANN with regularization alpha: ', alpha)
+    sigma = np.sqrt(1.0 / train_data.size) # = 1/24
+    w  = np.random.randn(train_data.shape[1], train_labels.shape[1]) * sigma
+    learning_rate = 1e-5
+    prevJ = J(w, train_data, train_labels, alpha)
+    n_iterations = 10
+    for i in range(n_iterations):
+        print('Iterate...')
+        update = learning_rate * gradJ(w, train_data, train_labels, alpha)
         w = w - update
-        newJ = J(w, trainingFaces, trainingLabels, alpha)
+        newJ = J(w, train_data, train_labels, alpha)
         diff = prevJ - newJ
         prevJ = newJ
-        count += 1
-        print('\t{} \tCost: {} \t Diff: {}'.format(count, newJ, diff))
+        print('\t{} \tCost: {} \t Diff: {}'.format(i+1, newJ, diff))
     return w
 
 
@@ -120,7 +128,11 @@ def main():
     train_data, train_labels, test_data, test_labels = load_data()
     w = gradient_descent(train_data, train_labels)
     assert w.shape == (784, 10)
-
+    predictions = test_data.dot(w)
+    real_labels = test_labels.argmax(axis=1)
+    predict_labels = predictions.argmax(axis=1)
+    accuracy = accuracy_score(y_true=real_labels, y_pred=predict_labels)
+    print(accuracy)
 
 if __name__ == '__main__':
     main()
