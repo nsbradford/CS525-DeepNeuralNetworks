@@ -59,7 +59,7 @@ def J(w, data, labels, alpha=0):
         Returns:
             J (float)
     """
-    print('\tJ()...')
+    print('\tJ()', end='', flush=True)
     output_dim = labels.shape[1]
     m = data.shape[0]
     assert output_dim == 10, str(data.shape)
@@ -72,6 +72,7 @@ def J(w, data, labels, alpha=0):
         y_k = labels[:, k]
         yhat = np.log(softmax(x=data, wk=wk, bottom=bottom))
         cost += (-1.0 / m) * y_k.dot(yhat)
+    print()
     return cost
 
 
@@ -79,8 +80,9 @@ def gradJ(w, data, labels, alpha=0.0):
     """ Compute gradient of cross-entropy loss function. 
         For one training example: dJ/dw = (yhat - yi)x = SUM(1 to m) { yhat_i^(j) - y_i^(j)}
     """
-    print('\tgradJ()...')
+    print('\tgradJ()', end='', flush=True)
     output_dim = labels.shape[1]
+    m = float(data.shape[0])
     grad = []
     # TODO vectorize over each of 10 outputs
     bottom_vec = np.exp(data.dot(w))
@@ -95,24 +97,25 @@ def gradJ(w, data, labels, alpha=0.0):
         grad.append(grad_k)
     answer = np.array(grad).T
     assert answer.shape == (784, 10), str(answer.shape)
-    return answer
+    print()
+    return answer / m
     
 
 def gradient_descent(train_data, train_labels, alpha=0.0):
-    """ Use Xavier initialization, where weights are randomly initialized to 
+    """ Normally we use Xavier initialization, where weights are randomly initialized to 
             a normal distribution with mean 0 and Var(W) = 1/N_input.
+        In this case for SoftMax, we can start with all 0s for initialization.
         Gradient descent is then applied until gain is < epsilon.
         learning_rate =  epsilon 
         threshold = delta
     """
-    # return np.ones((784, 10))
-
     print('Train 2-layer ANN with regularization alpha: ', alpha)
-    sigma = np.sqrt(1.0 / train_data.size) # = 1/24
-    w  = np.random.randn(train_data.shape[1], train_labels.shape[1]) * sigma
-    learning_rate = 1e-5
+    # sigma = np.sqrt(1.0 / train_data.size) # = 1/24
+    # np.random.randn(train_data.shape[1], train_labels.shape[1]) * sigma
+    w  = np.zeros((train_data.shape[1], train_labels.shape[1]))
+    learning_rate = 0.5 #1e-5
     prevJ = J(w, train_data, train_labels, alpha)
-    n_iterations = 10
+    n_iterations = 10 # Should be ~300
     for i in range(n_iterations):
         print('Iterate...')
         update = learning_rate * gradJ(w, train_data, train_labels, alpha)
@@ -132,7 +135,10 @@ def main():
     real_labels = test_labels.argmax(axis=1)
     predict_labels = predictions.argmax(axis=1)
     accuracy = accuracy_score(y_true=real_labels, y_pred=predict_labels)
-    print(accuracy)
+    loss = J(w, test_data, test_labels)
+    print('Test Loss:     {}'.format(loss))
+    print('Test Accuracy: {}'.format(accuracy))
+
 
 if __name__ == '__main__':
     main()
