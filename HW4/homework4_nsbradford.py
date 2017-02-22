@@ -36,17 +36,17 @@ def load_data():
     return train_data, train_labels, test_data, test_labels
 
 
-def softmax(x, wk, bottom):
-    """ Softmax: exp(x.T.dot(w_k)) / SUM { exp(x.T.dot(w_k))} """
-    print('.', end='', flush=True)
-    assert x.shape[1] == 784
-    assert wk.shape == (784,)
-    # assert w.shape == (784, 10)
-    top = np.exp(x.dot(wk))
-    # bottom_vec = exp_xdotw
-    # assert bottom_vec.shape == (x.shape[0],10), str(bottom_vec.shape)
+# def softmax(x, wk, bottom):
+#     """ Softmax: exp(x.T.dot(w_k)) / SUM { exp(x.T.dot(w_k))} """
+#     print('.', end='', flush=True)
+#     assert x.shape[1] == 784
+#     assert wk.shape == (784,)
+#     # assert w.shape == (784, 10)
+#     top = np.exp(x.dot(wk))
+#     # bottom_vec = exp_xdotw
+#     # assert bottom_vec.shape == (x.shape[0],10), str(bottom_vec.shape)
     
-    return np.divide(top, bottom) #element-wise
+#     return np.divide(top, bottom) #element-wise
 
 
 def J(w, x, y, alpha=0):
@@ -59,23 +59,15 @@ def J(w, x, y, alpha=0):
         Returns:
             J (float): cost of w given x and y
     """
-    print('\tJ()', end='', flush=True)
     m = x.shape[0]
     assert y.shape[1] == 10, str(x.shape)
-    bottom_vec = np.exp(x.dot(w))
-    bottom = np.sum(bottom_vec, axis=1) # sum of each row = sum for each dimension
-    yhat = np.divide(np.exp(x.dot(w)), bottom[:, None])
+    xdotw = x.dot(w)
+    bottom_vec = np.exp(xdotw)
+    bottom = np.sum(bottom_vec, axis=1, keepdims=True) # sum of each row = sum for each dimension
+    top = np.exp(xdotw)
+    yhat = np.log(np.divide(top, bottom))
     cost = np.sum(np.multiply(y, yhat))
     return (-1.0 / m) * cost
-    # output_dim = y.shape[1]    
-    # cost = 0
-    # TODO vectorize over each of 10 outputs
-    # for k in range(output_dim):
-    #     wk = w[:, k]
-    #     y_k = y[:, k]
-    #     yhat = np.log(softmax(x=x, wk=wk, bottom=bottom))
-    #     cost += (-1.0 / m) * y_k.dot(yhat)
-    # print()
 
 
 def gradJ(w, x, y, alpha=0.0):
@@ -88,27 +80,15 @@ def gradJ(w, x, y, alpha=0.0):
         Returns:
             grad    (np.array): 784 x 10, gradients for each weight in w
     """
-    print('\tgradJ()', end='', flush=True)
     output_dim = y.shape[1]
     m = float(x.shape[0])
-    bottom_vec = np.exp(x.dot(w))
+    xdotw = x.dot(w)
+    bottom_vec = np.exp(xdotw)
     bottom = np.sum(bottom_vec, axis=1) # sum of each row = sum for each dimension
-    yhat = np.divide(np.exp(x.dot(w)), bottom[:, None]) # TODO some
+    yhat = np.divide(np.exp(xdotw), bottom[:, None]) # TODO some
     answer = (yhat - y).T.dot(x).T
     assert answer.shape == (784, 10), str(answer.shape)
-    print()
     return answer / m
-    # TODO vectorize over each of 10 outputs
-    # grad = []
-    # for k in range(output_dim):
-    #     wk = w[:, k]
-    #     yhat_k = softmax(x=x, wk=wk, bottom=bottom)
-    #     y_k = y[:, k]
-    #     inner = (yhat_k - y_k)
-    #     assert inner.shape == (x.shape[0],), str(inner.shape)
-    #     grad_k = inner.dot(x)
-    #     grad.append(grad_k)
-    # answer = np.array(grad).T
     
 
 def gradient_descent(train_data, train_labels, alpha=0.0):
@@ -125,9 +105,8 @@ def gradient_descent(train_data, train_labels, alpha=0.0):
     w  = np.zeros((train_data.shape[1], train_labels.shape[1]))
     learning_rate = 0.5 #1e-5
     prevJ = J(w, train_data, train_labels, alpha)
-    n_iterations = 300 # Should be ~300
+    n_iterations = 10 # Should be ~300
     for i in range(n_iterations):
-        print('Iterate...')
         update = learning_rate * gradJ(w, train_data, train_labels, alpha)
         w = w - update
         newJ = J(w, train_data, train_labels, alpha)
@@ -146,6 +125,7 @@ def main():
     predict_labels = predictions.argmax(axis=1)
     accuracy = accuracy_score(y_true=real_labels, y_pred=predict_labels)
     loss = J(w, test_data, test_labels)
+    print()
     print('Test Loss:     {}'.format(loss))
     print('Test Accuracy: {}'.format(accuracy))
 
