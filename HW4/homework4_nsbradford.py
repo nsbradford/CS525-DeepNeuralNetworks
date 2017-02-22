@@ -78,38 +78,37 @@ def J(w, x, y, alpha=0):
     # print()
 
 
-def gradJ(w, data, labels, alpha=0.0):
+def gradJ(w, x, y, alpha=0.0):
     """ Compute gradient of cross-entropy loss function. 
         For one training example: dJ/dw = (yhat - yi)x = SUM(1 to m) { yhat_i^(j) - y_i^(j)}
         Args:
             w       (np.array): 784 x 10
-            data    (np.array): m x 784
-            labels  (np.array): m x 10
+            x    (np.array): m x 784
+            y  (np.array): m x 10
         Returns:
             grad    (np.array): 784 x 10, gradients for each weight in w
     """
     print('\tgradJ()', end='', flush=True)
-    output_dim = labels.shape[1]
-    m = float(data.shape[0])
-    grad = []
-    # TODO vectorize over each of 10 outputs
-    bottom_vec = np.exp(data.dot(w))
+    output_dim = y.shape[1]
+    m = float(x.shape[0])
+    bottom_vec = np.exp(x.dot(w))
     bottom = np.sum(bottom_vec, axis=1) # sum of each row = sum for each dimension
-    # for k in range(output_dim):
-    #     wk = w[:, k]
-    #     yhat_k = softmax(x=data, wk=wk, bottom=bottom)
-    #     y_k = labels[:, k]
-    #     inner = (yhat_k - y_k)
-    #     assert inner.shape == (data.shape[0],), str(inner.shape)
-    #     grad_k = inner.dot(data)
-    #     grad.append(grad_k)
-    # answer = np.array(grad).T
-
-
-
+    yhat = np.divide(np.exp(x.dot(w)), bottom[:, None]) # TODO some
+    answer = (yhat - y).T.dot(x).T
     assert answer.shape == (784, 10), str(answer.shape)
     print()
     return answer / m
+    # TODO vectorize over each of 10 outputs
+    # grad = []
+    # for k in range(output_dim):
+    #     wk = w[:, k]
+    #     yhat_k = softmax(x=x, wk=wk, bottom=bottom)
+    #     y_k = y[:, k]
+    #     inner = (yhat_k - y_k)
+    #     assert inner.shape == (x.shape[0],), str(inner.shape)
+    #     grad_k = inner.dot(x)
+    #     grad.append(grad_k)
+    # answer = np.array(grad).T
     
 
 def gradient_descent(train_data, train_labels, alpha=0.0):
@@ -126,7 +125,7 @@ def gradient_descent(train_data, train_labels, alpha=0.0):
     w  = np.zeros((train_data.shape[1], train_labels.shape[1]))
     learning_rate = 0.5 #1e-5
     prevJ = J(w, train_data, train_labels, alpha)
-    n_iterations = 10 # Should be ~300
+    n_iterations = 300 # Should be ~300
     for i in range(n_iterations):
         print('Iterate...')
         update = learning_rate * gradJ(w, train_data, train_labels, alpha)
