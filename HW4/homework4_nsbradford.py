@@ -49,36 +49,44 @@ def softmax(x, wk, bottom):
     return np.divide(top, bottom) #element-wise
 
 
-def J(w, data, labels, alpha=0):
+def J(w, x, y, alpha=0):
     """ Computes cross-entropy loss function.
         J(w1, ..., w10) = -1/m SUM(j=1 to m) { SUM(k=1 to 10) { y } }
         Args:
             w       (np.array): 784 x 10
-            data    (np.array): m x 784
-            labels  (np.array): m x 10
+            x    (np.array): m x 784
+            y  (np.array): m x 10
         Returns:
-            J (float)
+            J (float): cost of w given x and y
     """
     print('\tJ()', end='', flush=True)
-    output_dim = labels.shape[1]
-    m = data.shape[0]
-    assert output_dim == 10, str(data.shape)
-    cost = 0
-    # TODO vectorize over each of 10 outputs
-    bottom_vec = np.exp(data.dot(w))
+    m = x.shape[0]
+    assert y.shape[1] == 10, str(x.shape)
+    bottom_vec = np.exp(x.dot(w))
     bottom = np.sum(bottom_vec, axis=1) # sum of each row = sum for each dimension
-    for k in range(output_dim):
-        wk = w[:, k]
-        y_k = labels[:, k]
-        yhat = np.log(softmax(x=data, wk=wk, bottom=bottom))
-        cost += (-1.0 / m) * y_k.dot(yhat)
-    print()
-    return cost
+    yhat = np.divide(np.exp(x.dot(w)), bottom[:, None])
+    cost = np.sum(np.multiply(y, yhat))
+    return (-1.0 / m) * cost
+    # output_dim = y.shape[1]    
+    # cost = 0
+    # TODO vectorize over each of 10 outputs
+    # for k in range(output_dim):
+    #     wk = w[:, k]
+    #     y_k = y[:, k]
+    #     yhat = np.log(softmax(x=x, wk=wk, bottom=bottom))
+    #     cost += (-1.0 / m) * y_k.dot(yhat)
+    # print()
 
 
 def gradJ(w, data, labels, alpha=0.0):
     """ Compute gradient of cross-entropy loss function. 
         For one training example: dJ/dw = (yhat - yi)x = SUM(1 to m) { yhat_i^(j) - y_i^(j)}
+        Args:
+            w       (np.array): 784 x 10
+            data    (np.array): m x 784
+            labels  (np.array): m x 10
+        Returns:
+            grad    (np.array): 784 x 10, gradients for each weight in w
     """
     print('\tgradJ()', end='', flush=True)
     output_dim = labels.shape[1]
@@ -87,15 +95,18 @@ def gradJ(w, data, labels, alpha=0.0):
     # TODO vectorize over each of 10 outputs
     bottom_vec = np.exp(data.dot(w))
     bottom = np.sum(bottom_vec, axis=1) # sum of each row = sum for each dimension
-    for k in range(output_dim):
-        wk = w[:, k]
-        yhat_k = softmax(x=data, wk=wk, bottom=bottom)
-        y_k = labels[:, k]
-        inner = (yhat_k - y_k)
-        assert inner.shape == (data.shape[0],), str(inner.shape)
-        grad_k = inner.dot(data)
-        grad.append(grad_k)
-    answer = np.array(grad).T
+    # for k in range(output_dim):
+    #     wk = w[:, k]
+    #     yhat_k = softmax(x=data, wk=wk, bottom=bottom)
+    #     y_k = labels[:, k]
+    #     inner = (yhat_k - y_k)
+    #     assert inner.shape == (data.shape[0],), str(inner.shape)
+    #     grad_k = inner.dot(data)
+    #     grad.append(grad_k)
+    # answer = np.array(grad).T
+
+
+
     assert answer.shape == (784, 10), str(answer.shape)
     print()
     return answer / m
