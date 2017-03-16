@@ -8,7 +8,7 @@
     Because there are 10 different outputs, there are 10 weights vectors;
         thus, the weight matrix is 784 x 10.
     After optimizing on the training set, compute both 1) loss, and 2) accurcy on test set.
-    Submit screenshot.
+    Submit screenshot with accuracy, loss, and gradient descent's final 20 iterations.
 
 """
 
@@ -36,19 +36,6 @@ def load_data():
     return train_data, train_labels, test_data, test_labels
 
 
-# def softmax(x, wk, bottom):
-#     """ Softmax: exp(x.T.dot(w_k)) / SUM { exp(x.T.dot(w_k))} """
-#     print('.', end='', flush=True)
-#     assert x.shape[1] == 784
-#     assert wk.shape == (784,)
-#     # assert w.shape == (784, 10)
-#     top = np.exp(x.dot(wk))
-#     # bottom_vec = exp_xdotw
-#     # assert bottom_vec.shape == (x.shape[0],10), str(bottom_vec.shape)
-    
-#     return np.divide(top, bottom) #element-wise
-
-
 def J(w, x, y, alpha=0):
     """ Computes cross-entropy loss function.
         J(w1, ..., w10) = -1/m SUM(j=1 to m) { SUM(k=1 to 10) { y } }
@@ -74,18 +61,18 @@ def gradJ(w, x, y, alpha=0.0):
     """ Compute gradient of cross-entropy loss function. 
         For one training example: dJ/dw = (yhat - yi)x = SUM(1 to m) { yhat_i^(j) - y_i^(j)}
         Args:
-            w       (np.array): 784 x 10
+            w    (np.array): 784 x 10
             x    (np.array): m x 784
-            y  (np.array): m x 10
+            y    (np.array): m x 10
         Returns:
-            grad    (np.array): 784 x 10, gradients for each weight in w
+            grad (np.array): 784 x 10, gradients for each weight in w
     """
     output_dim = y.shape[1]
     m = float(x.shape[0])
     xdotw = x.dot(w)
     bottom_vec = np.exp(xdotw)
     bottom = np.sum(bottom_vec, axis=1) # sum of each row = sum for each dimension
-    yhat = np.divide(np.exp(xdotw), bottom[:, None]) # TODO some
+    yhat = np.divide(np.exp(xdotw), bottom[:, None])
     answer = (yhat - y).T.dot(x).T
     assert answer.shape == (784, 10), str(answer.shape)
     return answer / m
@@ -100,12 +87,11 @@ def gradient_descent(train_data, train_labels, alpha=0.0):
         threshold = delta
     """
     print('Train 2-layer ANN with regularization alpha: ', alpha)
-    # sigma = np.sqrt(1.0 / train_data.size) # = 1/24
-    # np.random.randn(train_data.shape[1], train_labels.shape[1]) * sigma
     w  = np.zeros((train_data.shape[1], train_labels.shape[1]))
-    learning_rate = 0.5 #1e-5
+    learning_rate = 0.5
     prevJ = J(w, train_data, train_labels, alpha)
-    n_iterations = 10 # Should be ~300
+    print ('Initial Cost:', prevJ)
+    n_iterations = 300
     for i in range(n_iterations):
         update = learning_rate * gradJ(w, train_data, train_labels, alpha)
         w = w - update

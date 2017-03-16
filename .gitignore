@@ -2,7 +2,9 @@
 # Created by https://www.gitignore.io/api/python
 
 # Specific to this project
-HW4/mnist_data
+HW4_SoftmaxRegression/mnist_data
+HW5_3LayerNN/mnist_data
+# *.npy
 
 # MacOS
 .DS_Store
