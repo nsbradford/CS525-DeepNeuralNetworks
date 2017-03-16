@@ -27,6 +27,8 @@
 """
 
 import numpy as np
+import math
+
 from sklearn.metrics import accuracy_score
 
 def load_data():
@@ -126,7 +128,21 @@ def gradJ(w, x, y, alpha=0.0):
     answer = (yhat - y).T.dot(x).T / m
     assert answer.shape == (784, 10)
     return answer 
-    
+
+
+def shuffleArraysInUnison(x, y):
+    assert x.shape[0] == y.shape[0]
+    p = np.random.permutation(x.shape[0])
+    return x[p, :], y[p, :]
+
+
+def getMiniBatches(data, labels, minibatch_size):
+    x, y = shuffleArraysInUnison(data, labels)
+    n_batches = int(math.ceil(x.shape[0] / minibatch_size))
+    batch_x = np.array_split(x, n_batches, axis=0)
+    batch_y = np.array_split(y, n_batches, axis=0)
+    return batch_x, batch_y
+
 
 def gradient_descent(x, y, learning_rate, minibatch_size, n_hidden_units, alpha):
     """ Normally we use Xavier initialization, where weights are randomly initialized to 
@@ -137,23 +153,31 @@ def gradient_descent(x, y, learning_rate, minibatch_size, n_hidden_units, alpha)
         threshold = delta
     """
     w  = np.zeros((x.shape[1], y.shape[1]))
-    n_iterations = 5
+    n_epochs = 5
     prevJ = J(w, x, y, alpha)
+    epochJ = prevJ
 
-    print('\nTrain 3-layer ANN with regularization alpha: ', alpha)
     print ('Initial Cost:', prevJ)
-    for i in range(n_iterations):
-        update = learning_rate * gradJ(w, x, y, alpha)
-        w = w - update
-        newJ = J(w, x, y, alpha)
-        diff = prevJ - newJ
-        prevJ = newJ
-        print('\t{} \tCost: {} \t Diff: {}'.format(i+1, newJ, diff))
+    batch_x, batch_y = getMiniBatches(x, y, minibatch_size)
+    print(len(batch_x))
+    for i in range(n_epochs):
+        for x, y in zip(batch_x, batch_y):
+            update = learning_rate * gradJ(w, x, y, alpha)
+            w = w - update
+            newJ = J(w, x, y, alpha)
+            diff = prevJ - newJ
+            prevJ = newJ
+            # print('\t\t{} \tCost: {} \t Diff: {}'.format(i+1, newJ, diff))
+        epochDiff = epochJ - prevJ
+        epochJ = prevJ
+        print('\tEnd Epoch {} \tCost: {} \t EpochDiff: {}'.format(i+1, newJ, epochDiff))
     assert w.shape == (784, 10)
     return w
 
 
 def train_model(x, y, params):
+    print('\nTrain 3-layer ANN with learning {}, batch_size {}, n_hidden_units {}, alpha {}'.format(
+                    params.learning_rate, params.minibatch_size, params.n_hidden_units, params.alpha))
     return gradient_descent(x, y, 
                             params.learning_rate, 
                             params.minibatch_size, 
@@ -164,10 +188,10 @@ def train_model(x, y, params):
 
 class HyperParams():
 
-    range_learning_rate = {0.001, 0.005, 0.01, 0.05, 0.1, 0.5}
-    range_minibatch_size = {16, 32, 64, 128, 256}
-    range_n_hidden_units = {30, 40, 50}
-    range_alpha = {1e3, 1e4, 1e5}
+    range_learning_rate = {0.1, 0.5} #{0.001, 0.005, 0.01, 0.05, 0.1, 0.5}
+    range_minibatch_size = {16, 10000}#, 64, 128, 256}
+    range_n_hidden_units = {0} #{30, 40, 50}
+    range_alpha = {0} #{1e3, 1e4, 1e5}
 
     def __init__(self, learning_rate, minibatch_size, n_hidden_units, alpha):
         self.learning_rate = learning_rate
@@ -183,8 +207,8 @@ class HyperParams():
                 for units in HyperParams.range_n_hidden_units:
                     for alpha in HyperParams.range_alpha:
                         answer.append(HyperParams(rate, size, units, alpha))
-        # return answer
-        return [HyperParams(0.5, 16, 0.0, 0.0)]
+        return answer
+        # return [HyperParams(0.5, 55000/16, 0.0, 0.0)]
 
     def toStr(self):
         return ('learning_rate :' + str(self.learning_rate), 
@@ -209,20 +233,23 @@ def findBestHyperparameters(train_data, train_labels, val_data, val_labels):
         print('\nTesting pararms: {', params.toStr(), '}')
         w = train_model(train_data, train_labels, params)
         loss, accuracy = getLossAndAccuracy(w, val_data, val_labels)
+        reportResults(loss, accuracy, 'Validation')
         if accuracy > best_accuracy:
             best_params = params
             best_accuracy = accuracy
     print('\nBest params found: {', best_params.toStr(), '}\n')
     return best_params
 
+#==================================================================================================
 
-def reportResults(loss, accuracy):
+def reportResults(loss, accuracy, text='Test'):
     print()
-    print('Test Loss:     {}'.format(loss))
-    print('Test Accuracy: {}'.format(accuracy))
+    print(text + ' Loss:     {}'.format(loss))
+    print(text + ' Accuracy: {}'.format(accuracy))
 
 
 def main():
+    np.random.seed(7)
     train_data, train_labels, val_data, val_labels, test_data, test_labels = load_data()
     params = findBestHyperparameters(train_data, train_labels, val_data, val_labels)
     w = train_model(train_data, train_labels, params)
