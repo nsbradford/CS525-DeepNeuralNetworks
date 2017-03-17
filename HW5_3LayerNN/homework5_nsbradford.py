@@ -131,11 +131,6 @@ def forwardPropagate(W1, b1, W2, b2, x):
     return yhat
 
 
-def JWrapper(w, x, y, n_hidden_units):
-    W1, b1, W2, b2 = expandW(w, n_hidden_units)
-    return J(W1, b1, W2, b2, x, y)
-
-
 def J(W1, b1, W2, b2, x, y):
     """ Computes cross-entropy loss function.
         J(w1, ..., w10) = -1/m SUM(j=1 to m) { SUM(k=1 to 10) { y } }
@@ -156,16 +151,9 @@ def J(W1, b1, W2, b2, x, y):
     return crossEntropy(y, yhat)
 
 
-def gradJWrapper(w, x, y, n_hidden_units):
-    """
-    """
-    n_input = 784
-    n_output = 10
-    length = (n_input * n_hidden_units) + (n_hidden_units * n_output) + n_hidden_units + n_output
-    assert w.shape == (length,), (w.shape, (length,))
-
+def JWrapper(w, x, y, n_hidden_units):
     W1, b1, W2, b2 = expandW(w, n_hidden_units)
-    return gradJ(W1, b1, W2, b2, x, y)
+    return J(W1, b1, W2, b2, x, y)
 
 
 def gradJ(W1, b1, W2, b2, x, y):
@@ -179,7 +167,7 @@ def gradJ(W1, b1, W2, b2, x, y):
             y (np.array): m x 10
     """
     m = x.shape[0]
-    n_hidden = W1.shape[0]
+    n_hidden_units = W1.shape[0]
     n_output = 10
     n_input = 784
 
@@ -203,27 +191,33 @@ def gradJ(W1, b1, W2, b2, x, y):
     dJ_db1 = np.sum(dJ_db1, axis=0) # sum of each column
 
     assert yhat.shape == (m, n_output), yhat.shape
-    assert z1.shape == h1.shape == (m, n_hidden), (z1.shape, h1.shape, (m, n_hidden))
+    assert z1.shape == h1.shape == (m, n_hidden_units), (z1.shape, h1.shape, (m, n_hidden_units))
     assert g2.shape == (m, n_output), g2.shape
     assert dJ_dW2.shape == W2.shape, dJ_dW2.shape
-    assert g1.shape == h1.shape == (m, n_hidden), (g1.shape, h1.shape)
+    assert g1.shape == h1.shape == (m, n_hidden_units), (g1.shape, h1.shape)
     assert dJ_dW1.shape == W1.shape, dJ_dW1.shape
     assert dJ_db2.shape == b2.shape, dJ_db2.shape
     assert dJ_db1.shape == b1.shape, dJ_db1.shape
-    return dJ_dW2 / m, dJ_db2 / m, dJ_dW1 / m, dJ_db1 / m
+    return flattenW(dJ_dW1, dJ_db1, dJ_dW2, dJ_db2) / m
+
+
+def gradJWrapper(w, x, y, n_hidden_units):
+    """    """
+    n_input = 784
+    n_output = 10
+    length = (n_input * n_hidden_units) + (n_hidden_units * n_output) + n_hidden_units + n_output
+    assert w.shape == (length,), (w.shape, (length,))
+    W1, b1, W2, b2 = expandW(w, n_hidden_units)
+    return gradJ(W1, b1, W2, b2, x, y)
 
 
 def backprop(w, x, y, n_hidden_units, learning_rate):
-    dJ_dW2, dJ_db2, dJ_dW1, dJ_db1 = gradJWrapper(w, x, y, n_hidden_units)
+    dJ_dW1, dJ_db1, dJ_dW2, dJ_db2 = expandW(gradJWrapper(w, x, y, n_hidden_units), n_hidden_units)
     W1, b1, W2, b2 = expandW(w, n_hidden_units)
-    assert W1.shape == dJ_dW1.shape
-    assert W2.shape == dJ_dW2.shape
-    if DEBUG: print('\t\t\tApply updates')
     newW1 = W1 - (dJ_dW1 * learning_rate)
     newb1 = b1 - (dJ_db1 * learning_rate)
     newW2 = W2 - (dJ_dW2 * learning_rate)
     newb2 = b2 - (dJ_db2 * learning_rate)
-    if DEBUG: print('\t\t\tDone with backprop')
     return flattenW(newW1, newb1, newW2, newb2)
 
 
@@ -370,10 +364,10 @@ def main():
     np.random.seed(7)
     train_data, train_labels, val_data, val_labels, test_data, test_labels = load_data()
     testBackpropGradient(x=val_data[:5, :], y=val_labels[:5, :], n_hidden_units=30)
-    # params = findBestHyperparameters(train_data, train_labels, val_data, val_labels)
-    # W1, b1, W2, b2 = train_model(train_data, train_labels, params)
-    # loss, accuracy = getLossAndAccuracy(W1, b1, W2, b2, test_data, test_labels)
-    # reportResults(loss, accuracy)
+    params = findBestHyperparameters(train_data, train_labels, val_data, val_labels)
+    W1, b1, W2, b2 = train_model(train_data, train_labels, params)
+    loss, accuracy = getLossAndAccuracy(W1, b1, W2, b2, test_data, test_labels)
+    reportResults(loss, accuracy)
 
 
 if __name__ == '__main__':
