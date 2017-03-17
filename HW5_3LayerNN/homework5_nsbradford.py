@@ -34,6 +34,9 @@
         C) Report cross-entropy and accuracy on test set, along with screenshot of these values
             with final 20 epochs of SGD. Cost should be < 0.16, accuracy should be > 95%.
 
+    Unregularized test accuracy after 30 epochs: 96.2%
+    Regularized with Alpha=1/1e-3: 96.42%
+
 """
 
 import numpy as np
@@ -211,13 +214,14 @@ def gradJWrapper(w, x, y, n_hidden_units):
     return gradJ(W1, b1, W2, b2, x, y)
 
 
-def backprop(w, x, y, n_hidden_units, learning_rate):
+def backprop(w, x, y, n_hidden_units, learning_rate, alpha):
     dJ_dW1, dJ_db1, dJ_dW2, dJ_db2 = expandW(gradJWrapper(w, x, y, n_hidden_units), n_hidden_units)
     W1, b1, W2, b2 = expandW(w, n_hidden_units)
-    newW1 = W1 - (dJ_dW1 * learning_rate)
-    newb1 = b1 - (dJ_db1 * learning_rate)
-    newW2 = W2 - (dJ_dW2 * learning_rate)
-    newb2 = b2 - (dJ_db2 * learning_rate)
+    decay = (1 - learning_rate * alpha)
+    newW1 = decay * W1 - (dJ_dW1 * learning_rate)
+    newb1 = decay * b1 - (dJ_db1 * learning_rate)
+    newW2 = decay * W2 - (dJ_dW2 * learning_rate)
+    newb2 = decay * b2 - (dJ_db2 * learning_rate)
     return flattenW(newW1, newb1, newW2, newb2)
 
 
@@ -238,12 +242,11 @@ def getMiniBatches(data, labels, minibatch_size):
     return batch_x, batch_y
 
 
-def gradient_descent(x, y, learning_rate, minibatch_size, n_hidden_units, alpha):
+def gradient_descent(x, y, learning_rate, minibatch_size, n_hidden_units, alpha, n_epochs):
     """ 
     """
     W1, b1, W2, b2 = initializeWeights(n_hidden_units, n_inputs=784, n_outputs=10)
     w = flattenW(W1, b1, W2, b2)
-    n_epochs = 5
     prevJ = JWrapper(w, x, y, n_hidden_units)
     epochJ = prevJ
 
@@ -252,7 +255,7 @@ def gradient_descent(x, y, learning_rate, minibatch_size, n_hidden_units, alpha)
     print(len(batch_x))
     for i in range(n_epochs):
         for x, y in zip(batch_x, batch_y):
-            w = backprop(w, x, y, n_hidden_units, learning_rate)
+            w = backprop(w, x, y, n_hidden_units, learning_rate, alpha)
             if DEBUG: print('\tUpdated weights.')
             newJ = JWrapper(w, x, y, n_hidden_units)
             diff = prevJ - newJ
@@ -272,16 +275,17 @@ def train_model(x, y, params):
                             params.learning_rate, 
                             params.minibatch_size, 
                             params.n_hidden_units, 
-                            params.alpha)
+                            params.alpha,
+                            n_epochs=30)
 
 #==================================================================================================
 
 class HyperParams():
 
     range_learning_rate = {0.1, 0.5} #{0.001, 0.005, 0.01, 0.05, 0.1, 0.5}
-    range_minibatch_size = {16, 10000}#, 64, 128, 256}
-    range_n_hidden_units = {30} #{30, 40, 50}
-    range_alpha = {0} #{1e3, 1e4, 1e5}
+    range_minibatch_size = {256} # {16, 32, 64, 128, 256}
+    range_n_hidden_units = {30, 40, 50} #{30, 40, 50}
+    range_alpha = {1/1e2, 1/1e3} #{1e3, 1e4, 1e5}
 
     def __init__(self, learning_rate, minibatch_size, n_hidden_units, alpha):
         self.learning_rate = learning_rate
@@ -297,8 +301,8 @@ class HyperParams():
                 for units in HyperParams.range_n_hidden_units:
                     for alpha in HyperParams.range_alpha:
                         answer.append(HyperParams(rate, size, units, alpha))
-        # return answer
-        return [HyperParams(5e-1, 256, 30, 0.0)]
+        return answer
+        # return [HyperParams(0.5, 256, 50, 1/1e3)] # best: 0.5, 256, 50, 1/1e3
 
     def toStr(self):
         return ('learning_rate :' + str(self.learning_rate), 
@@ -319,7 +323,9 @@ def getLossAndAccuracy(W1, b1, W2, b2, data, labels):
 def findBestHyperparameters(train_data, train_labels, val_data, val_labels):
     best_params = None
     best_accuracy = 0.0
+    print('\nBegin findBestHyperparameters(): checking {} sets'.format(len(HyperParams.getHyperParamList())))
     for params in HyperParams.getHyperParamList():
+
         print('\nTesting pararms: {', params.toStr(), '}')
         W1, b1, W2, b2 = train_model(train_data, train_labels, params)
         loss, accuracy = getLossAndAccuracy(W1, b1, W2, b2, val_data, val_labels)
@@ -345,13 +351,15 @@ def initializeWeights(n_hidden_units, n_inputs, n_outputs):
 def testBackpropGradient(x, y, n_hidden_units):
     """ Use check_grad() to ensure correctness of gradient expression. """
     assert x.shape[1] == 784 and y.shape[1] == 10
+    print('testBackpropGradient...')
     W1, b1, W2, b2 = initializeWeights(n_hidden_units, n_inputs=784, n_outputs=10)
     w = flattenW(W1, b1, W2, b2)
     point_to_check = w
-    print(w.shape)
+    # print(w.shape)
     gradient_check = scipy.optimize.check_grad(JWrapper, gradJWrapper, point_to_check, 
                         x, y, n_hidden_units)
     print('check_grad() value: {}'.format(gradient_check))
+    print('Gradient is good!' if gradient_check < 1e-4 else 'WARNING: bad gradient!')
 
 
 def reportResults(loss, accuracy, text='Test'):
