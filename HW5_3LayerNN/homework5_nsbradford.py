@@ -16,6 +16,16 @@
         # of training epochs
         Regularization strength
 
+    Specifically, implement f: R784 -> R10, where:
+        z1 = p1(x) = W1 * x + b1
+        z2 = p2(x) = W2 * x + b2
+        h1 = f1(x) = a1(p1(x))
+        yhat = f2(h1) = a2(p2(h1))
+        f(x) = f2(f1(x)) = a2(p2(a1(p1(x))))
+    For activation functions a1, a2 in network, use:
+        a1(z1) = relu(z1)
+        a2(z2) = softmax(z2)
+
     Task
         A) Implement stochastic gradient descent (SGD; see Section 5.9 and Algorithm 6.4 
             in the Deep Learning textbook) for the 3-layer neural network shown above.
@@ -29,7 +39,10 @@
 import numpy as np
 import math
 
+import scipy
 from sklearn.metrics import accuracy_score
+
+DEBUG = False
 
 def load_data():
     """ Load data.
@@ -63,7 +76,10 @@ def crossEntropy(y, yhat):
 
 
 def relu(z):
-    return (z >= 1) * z
+    return (z >= 0) * z
+
+def grad_relu(z):
+    return (z >= 0) * 1
 
 
 def softmax(z):
@@ -73,61 +89,145 @@ def softmax(z):
     yhat = np.divide(top, bottom) # could alternatively use bottom[:, None] to keep rows
     return yhat
 
+#==================================================================================================
 
-def propagateLayer(W, x, b):
-    return W.dot(x) + b
 
-def forwardPropagate(x, W1, b1, W2, b2):
+def flattenW(W1, b1, W2, b2):
+    flattened = (W1.flatten(), b1.flatten(), W2.flatten(), b2.flatten())
+    w = np.concatenate(flattened)
+    return w
+
+
+def expandW(w, n_hidden_units):
+    i1 = 784 * n_hidden_units
+    i2 = i1 + n_hidden_units
+    i3 = i2 + n_hidden_units * 10
+    i4 = i3 + 10
+    assert i4 == w.size, str(i4) + ' ' + str(w.size)
+    W1 = w[0:i1].reshape((n_hidden_units, 784))
+    b1 = w[i1:i2]
+    W2 = w[i2:i3].reshape((10, n_hidden_units))
+    b2 = w[i3:i4]
+    return W1, b1, W2, b2
+
+
+def forwardPropagate(W1, b1, W2, b2, x):
+    """ Produce output from the neural network.
+        Args:
+            W1 (np.array): n_hidden x 784
+            W2 (np.array): 10 x n_hidden
+            b1 (np.array): n_hidden x 1
+            b2 (np.array): 10 x 1
+            x (np.array): m x 784
+        Returns:
+            yhat (np.array): m x 10
     """
-    Specifically, implement f: R784 -> R10, where:
-        z1 = p1(x) = W1 * x + b1
-        z2 = p2(x) = W2 * x + b2
-        h1 = f1(x) = a1(p1(x))
-        yhat = f2(h1) = a2(p2(h1))
-        f(x) = f2(f1(x)) = a2(p2(a1(p1(x))))
-    For activation functions a1, a2 in network, use:
-        a1(z1) = relu(z1)
-        a2(z2) = softmax(z2)
-    """
-    z1 = propagateLayer(W1, x, b1)
+    # if DEBUG: print('\t\t\tforwardPropagate()...')
+    z1 = x.dot(W1.T) + b1 
     h1 = relu(z1)
-    z2 = propagateLayer(W2, h1, b2)
+    z2 = h1.dot(W2.T) + b2
     yhat = softmax(z2)
+    assert yhat.shape == (x.shape[0], W2.shape[0]), yhat.shape
     return yhat
 
 
-def J(w, x, y, alpha=0):
+def JWrapper(w, x, y, n_hidden_units):
+    W1, b1, W2, b2 = expandW(w, n_hidden_units)
+    return J(W1, b1, W2, b2, x, y)
+
+
+def J(W1, b1, W2, b2, x, y):
     """ Computes cross-entropy loss function.
         J(w1, ..., w10) = -1/m SUM(j=1 to m) { SUM(k=1 to 10) { y } }
         Args:
-            w       (np.array): 784 x 10
-            x    (np.array): m x 784
-            y  (np.array): m x 10
+            W1 (np.array): n_hidden x 784
+            W2 (np.array): 10 x n_hidden
+            b1 (np.array): n_hidden x 1
+            b2 (np.array): 10 x 1
+            x (np.array): m x 784
+            y (np.array): m x 10
         Returns:
             J (float): cost of w given x and y
 
         Use cross-entropy cost functino:
         J(W1, b1, W2, b2) = -1/m * SUM(y * log(yhat))
     """
-    yhat = softmax(x.dot(w))
+    yhat = forwardPropagate(W1, b1, W2, b2, x) # OLD: yhat = softmax(x.dot(w))
     return crossEntropy(y, yhat)
 
 
-def gradJ(w, x, y, alpha=0.0):
-    """ Compute gradient of cross-entropy loss function. 
-        For one training example: dJ/dw = (yhat - yi)x = SUM(1 to m) { yhat_i^(j) - y_i^(j)}
-        Args:
-            w    (np.array): 784 x 10
-            x    (np.array): m x 784
-            y    (np.array): m x 10
-        Returns:
-            grad (np.array): 784 x 10, gradients for each weight in w
+def gradJWrapper(w, x, y, n_hidden_units):
     """
-    m = float(x.shape[0])
-    yhat = softmax(x.dot(w))
-    answer = (yhat - y).T.dot(x).T / m
-    assert answer.shape == (784, 10)
-    return answer 
+    """
+    n_input = 784
+    n_output = 10
+    length = (n_input * n_hidden_units) + (n_hidden_units * n_output) + n_hidden_units + n_output
+    assert w.shape == (length,), (w.shape, (length,))
+
+    W1, b1, W2, b2 = expandW(w, n_hidden_units)
+    return gradJ(W1, b1, W2, b2, x, y)
+
+
+def gradJ(W1, b1, W2, b2, x, y):
+    """
+        Args:
+            W1 (np.array): n_hidden x 784
+            W2 (np.array): 10 x n_hidden
+            b1 (np.array): n_hidden x 1
+            b2 (np.array): 10 x 1
+            x (np.array): m x 784
+            y (np.array): m x 10
+    """
+    m = x.shape[0]
+    n_hidden = W1.shape[0]
+    n_output = 10
+    n_input = 784
+
+    if DEBUG: print('\t\tgradJ() backprop...')
+    z1 = x.dot(W1.T) + b1
+    h1 = relu(z1)
+    yhat = forwardPropagate(W1, b1, W2, b2, x)
+    
+    if DEBUG: print('\t\t\tBegin Layer 2...')
+    g2 = yhat - y
+    dJ_dW2 = g2.T.dot(h1) #np.outer(g2, h1)
+    dJ_db2 = np.copy(g2)
+    dJ_db2 = np.sum(dJ_db2, axis=0) # sum of each column
+
+    if DEBUG: print('\t\t\tBegin Layer 1...')
+    g1 = g2.dot(W2)
+    g1 = np.multiply(g1, grad_relu(z1))
+    if DEBUG: print('\t\t\tdJ_dW1...')
+    dJ_dW1 = g1.T.dot(x) #np.outer(g1, x.T)
+    dJ_db1 = np.copy(g1)
+    dJ_db1 = np.sum(dJ_db1, axis=0) # sum of each column
+
+    assert yhat.shape == (m, n_output), yhat.shape
+    assert z1.shape == h1.shape == (m, n_hidden), (z1.shape, h1.shape, (m, n_hidden))
+    assert g2.shape == (m, n_output), g2.shape
+    assert dJ_dW2.shape == W2.shape, dJ_dW2.shape
+    assert g1.shape == h1.shape == (m, n_hidden), (g1.shape, h1.shape)
+    assert dJ_dW1.shape == W1.shape, dJ_dW1.shape
+    assert dJ_db2.shape == b2.shape, dJ_db2.shape
+    assert dJ_db1.shape == b1.shape, dJ_db1.shape
+    return dJ_dW2 / m, dJ_db2 / m, dJ_dW1 / m, dJ_db1 / m
+
+
+def backprop(w, x, y, n_hidden_units, learning_rate):
+    dJ_dW2, dJ_db2, dJ_dW1, dJ_db1 = gradJWrapper(w, x, y, n_hidden_units)
+    W1, b1, W2, b2 = expandW(w, n_hidden_units)
+    assert W1.shape == dJ_dW1.shape
+    assert W2.shape == dJ_dW2.shape
+    if DEBUG: print('\t\t\tApply updates')
+    newW1 = W1 - (dJ_dW1 * learning_rate)
+    newb1 = b1 - (dJ_db1 * learning_rate)
+    newW2 = W2 - (dJ_dW2 * learning_rate)
+    newb2 = b2 - (dJ_db2 * learning_rate)
+    if DEBUG: print('\t\t\tDone with backprop')
+    return flattenW(newW1, newb1, newW2, newb2)
+
+
+#==================================================================================================
 
 
 def shuffleArraysInUnison(x, y):
@@ -145,34 +245,30 @@ def getMiniBatches(data, labels, minibatch_size):
 
 
 def gradient_descent(x, y, learning_rate, minibatch_size, n_hidden_units, alpha):
-    """ Normally we use Xavier initialization, where weights are randomly initialized to 
-            a normal distribution with mean 0 and Var(W) = 1/N_input.
-        In this case for SoftMax, we can start with all 0s for initialization.
-        Gradient descent is then applied until gain is < epsilon.
-        learning_rate =  epsilon 
-        threshold = delta
+    """ 
     """
-    w  = np.zeros((x.shape[1], y.shape[1]))
+    W1, b1, W2, b2 = initializeWeights(n_hidden_units, n_inputs=784, n_outputs=10)
+    w = flattenW(W1, b1, W2, b2)
     n_epochs = 5
-    prevJ = J(w, x, y, alpha)
+    prevJ = JWrapper(w, x, y, n_hidden_units)
     epochJ = prevJ
 
     print ('Initial Cost:', prevJ)
-    batch_x, batch_y = getMiniBatches(x, y, minibatch_size)
+    batch_x, batch_y = getMiniBatches(x, y, minibatch_size) # a list of individual batches
     print(len(batch_x))
     for i in range(n_epochs):
         for x, y in zip(batch_x, batch_y):
-            update = learning_rate * gradJ(w, x, y, alpha)
-            w = w - update
-            newJ = J(w, x, y, alpha)
+            w = backprop(w, x, y, n_hidden_units, learning_rate)
+            if DEBUG: print('\tUpdated weights.')
+            newJ = JWrapper(w, x, y, n_hidden_units)
             diff = prevJ - newJ
             prevJ = newJ
             # print('\t\t{} \tCost: {} \t Diff: {}'.format(i+1, newJ, diff))
         epochDiff = epochJ - prevJ
         epochJ = prevJ
         print('\tEnd Epoch {} \tCost: {} \t EpochDiff: {}'.format(i+1, newJ, epochDiff))
-    assert w.shape == (784, 10)
-    return w
+    W1, b1, W2, b2 = expandW(w, n_hidden_units)
+    return W1, b1, W2, b2
 
 
 def train_model(x, y, params):
@@ -190,7 +286,7 @@ class HyperParams():
 
     range_learning_rate = {0.1, 0.5} #{0.001, 0.005, 0.01, 0.05, 0.1, 0.5}
     range_minibatch_size = {16, 10000}#, 64, 128, 256}
-    range_n_hidden_units = {0} #{30, 40, 50}
+    range_n_hidden_units = {30} #{30, 40, 50}
     range_alpha = {0} #{1e3, 1e4, 1e5}
 
     def __init__(self, learning_rate, minibatch_size, n_hidden_units, alpha):
@@ -207,8 +303,8 @@ class HyperParams():
                 for units in HyperParams.range_n_hidden_units:
                     for alpha in HyperParams.range_alpha:
                         answer.append(HyperParams(rate, size, units, alpha))
-        return answer
-        # return [HyperParams(0.5, 55000/16, 0.0, 0.0)]
+        # return answer
+        return [HyperParams(5e-1, 256, 30, 0.0)]
 
     def toStr(self):
         return ('learning_rate :' + str(self.learning_rate), 
@@ -217,12 +313,12 @@ class HyperParams():
                 'alpha :' + str(self.alpha))
 
 
-def getLossAndAccuracy(w, data, labels):
-    predictions = data.dot(w)
+def getLossAndAccuracy(W1, b1, W2, b2, data, labels):
+    predictions = forwardPropagate(W1, b1, W2, b2, data)
     predict_labels = predictions.argmax(axis=1)
     true_labels = labels.argmax(axis=1)
     accuracy = accuracy_score(y_true=true_labels, y_pred=predict_labels)
-    loss = J(w, data, labels)
+    loss = J(W1, b1, W2, b2, data, labels)
     return loss, accuracy
 
 
@@ -231,8 +327,8 @@ def findBestHyperparameters(train_data, train_labels, val_data, val_labels):
     best_accuracy = 0.0
     for params in HyperParams.getHyperParamList():
         print('\nTesting pararms: {', params.toStr(), '}')
-        w = train_model(train_data, train_labels, params)
-        loss, accuracy = getLossAndAccuracy(w, val_data, val_labels)
+        W1, b1, W2, b2 = train_model(train_data, train_labels, params)
+        loss, accuracy = getLossAndAccuracy(W1, b1, W2, b2, val_data, val_labels)
         reportResults(loss, accuracy, 'Validation')
         if accuracy > best_accuracy:
             best_params = params
@@ -241,6 +337,28 @@ def findBestHyperparameters(train_data, train_labels, val_data, val_labels):
     return best_params
 
 #==================================================================================================
+
+def initializeWeights(n_hidden_units, n_inputs, n_outputs):
+    """ Normally we use Xavier initialization, where weights are randomly initialized to 
+            a normal distribution with mean 0 and Var(W) = 1/N_input.
+    """
+    W1 = np.random.randn(n_hidden_units, n_inputs) * np.sqrt(1/(n_inputs*n_hidden_units))
+    W2 = np.random.randn(n_outputs, n_hidden_units) * np.sqrt(1/(n_hidden_units*n_outputs))
+    b1 = np.random.randn(n_hidden_units, 1) * np.sqrt(1/n_hidden_units)
+    b2 = np.random.randn(n_outputs, 1) * np.sqrt(1/n_outputs)
+    return W1, b1, W2, b2
+
+def testBackpropGradient(x, y, n_hidden_units):
+    """ Use check_grad() to ensure correctness of gradient expression. """
+    assert x.shape[1] == 784 and y.shape[1] == 10
+    W1, b1, W2, b2 = initializeWeights(n_hidden_units, n_inputs=784, n_outputs=10)
+    w = flattenW(W1, b1, W2, b2)
+    point_to_check = w
+    print(w.shape)
+    gradient_check = scipy.optimize.check_grad(JWrapper, gradJWrapper, point_to_check, 
+                        x, y, n_hidden_units)
+    print('check_grad() value: {}'.format(gradient_check))
+
 
 def reportResults(loss, accuracy, text='Test'):
     print()
@@ -251,10 +369,11 @@ def reportResults(loss, accuracy, text='Test'):
 def main():
     np.random.seed(7)
     train_data, train_labels, val_data, val_labels, test_data, test_labels = load_data()
-    params = findBestHyperparameters(train_data, train_labels, val_data, val_labels)
-    w = train_model(train_data, train_labels, params)
-    loss, accuracy = getLossAndAccuracy(w, test_data, test_labels)
-    reportResults(loss, accuracy)
+    testBackpropGradient(x=val_data[:5, :], y=val_labels[:5, :], n_hidden_units=30)
+    # params = findBestHyperparameters(train_data, train_labels, val_data, val_labels)
+    # W1, b1, W2, b2 = train_model(train_data, train_labels, params)
+    # loss, accuracy = getLossAndAccuracy(W1, b1, W2, b2, test_data, test_labels)
+    # reportResults(loss, accuracy)
 
 
 if __name__ == '__main__':
