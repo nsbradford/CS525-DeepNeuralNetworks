@@ -46,6 +46,8 @@ import scipy
 from sklearn.metrics import accuracy_score
 
 DEBUG = False
+N_INPUT = 784
+N_OUTPUT = 10
 
 def load_data():
     """ Load data.
@@ -96,12 +98,29 @@ def softmax(z):
 
 
 def flattenW(W1, b1, W2, b2):
+    """ Flattens all weight and bias matrices into a weight vector.
+            Can be used just as well for the gradients.
+        Args:
+            W1 (np.array): n_hidden x 784
+            W2 (np.array): 10 x n_hidden
+            b1 (np.array): n_hidden x 1
+            b2 (np.array): 10 x 1
+            x (np.array): m x 784
+        Returns:
+            w (np.array): length * 1
+    """
+    n_hidden_units = W1.shape[0]
     flattened = (W1.flatten(), b1.flatten(), W2.flatten(), b2.flatten())
     w = np.concatenate(flattened)
+    length = (N_INPUT * n_hidden_units) + (n_hidden_units * N_OUTPUT) + n_hidden_units + N_OUTPUT
+    assert w.shape == (length,), (w.shape, (length,))
     return w
 
 
 def expandW(w, n_hidden_units):
+    """ Unpacks the weight and bias matrices from a weight vector.
+            Can be used just as well for the gradients.
+    """
     i1 = 784 * n_hidden_units
     i2 = i1 + n_hidden_units
     i3 = i2 + n_hidden_units * 10
@@ -125,7 +144,6 @@ def forwardPropagate(W1, b1, W2, b2, x):
         Returns:
             yhat (np.array): m x 10
     """
-    # if DEBUG: print('\t\t\tforwardPropagate()...')
     z1 = x.dot(W1.T) + b1 
     h1 = relu(z1)
     z2 = h1.dot(W2.T) + b2
@@ -171,8 +189,6 @@ def gradJ(W1, b1, W2, b2, x, y):
     """
     m = x.shape[0]
     n_hidden_units = W1.shape[0]
-    n_output = 10
-    n_input = 784
 
     if DEBUG: print('\t\tgradJ() backprop...')
     z1 = x.dot(W1.T) + b1
@@ -193,9 +209,9 @@ def gradJ(W1, b1, W2, b2, x, y):
     dJ_db1 = np.copy(g1)
     dJ_db1 = np.sum(dJ_db1, axis=0) # sum of each column
 
-    assert yhat.shape == (m, n_output), yhat.shape
+    assert yhat.shape == (m, N_OUTPUT), yhat.shape
     assert z1.shape == h1.shape == (m, n_hidden_units), (z1.shape, h1.shape, (m, n_hidden_units))
-    assert g2.shape == (m, n_output), g2.shape
+    assert g2.shape == (m, N_OUTPUT), g2.shape
     assert dJ_dW2.shape == W2.shape, dJ_dW2.shape
     assert g1.shape == h1.shape == (m, n_hidden_units), (g1.shape, h1.shape)
     assert dJ_dW1.shape == W1.shape, dJ_dW1.shape
@@ -206,9 +222,7 @@ def gradJ(W1, b1, W2, b2, x, y):
 
 def gradJWrapper(w, x, y, n_hidden_units):
     """    """
-    n_input = 784
-    n_output = 10
-    length = (n_input * n_hidden_units) + (n_hidden_units * n_output) + n_hidden_units + n_output
+    length = (N_INPUT * n_hidden_units) + (n_hidden_units * N_OUTPUT) + n_hidden_units + N_OUTPUT
     assert w.shape == (length,), (w.shape, (length,))
     W1, b1, W2, b2 = expandW(w, n_hidden_units)
     return gradJ(W1, b1, W2, b2, x, y)
@@ -245,7 +259,7 @@ def getMiniBatches(data, labels, minibatch_size):
 def gradient_descent(x, y, learning_rate, minibatch_size, n_hidden_units, alpha, n_epochs):
     """ 
     """
-    W1, b1, W2, b2 = initializeWeights(n_hidden_units, n_inputs=784, n_outputs=10)
+    W1, b1, W2, b2 = initializeWeights(n_hidden_units, n_inputs=N_INPUT, n_outputs=N_OUTPUT)
     w = flattenW(W1, b1, W2, b2)
     prevJ = JWrapper(w, x, y, n_hidden_units)
     epochJ = prevJ
@@ -276,7 +290,7 @@ def train_model(x, y, params):
                             params.minibatch_size, 
                             params.n_hidden_units, 
                             params.alpha,
-                            n_epochs=30)
+                            n_epochs=3)
 
 #==================================================================================================
 
@@ -301,8 +315,8 @@ class HyperParams():
                 for units in HyperParams.range_n_hidden_units:
                     for alpha in HyperParams.range_alpha:
                         answer.append(HyperParams(rate, size, units, alpha))
-        return answer
-        # return [HyperParams(0.5, 256, 50, 1/1e3)] # best: 0.5, 256, 50, 1/1e3
+        # return answer
+        return [HyperParams(0.5, 256, 50, 1/1e3)] # best
 
     def toStr(self):
         return ('learning_rate :' + str(self.learning_rate), 
@@ -355,7 +369,6 @@ def testBackpropGradient(x, y, n_hidden_units):
     W1, b1, W2, b2 = initializeWeights(n_hidden_units, n_inputs=784, n_outputs=10)
     w = flattenW(W1, b1, W2, b2)
     point_to_check = w
-    # print(w.shape)
     gradient_check = scipy.optimize.check_grad(JWrapper, gradJWrapper, point_to_check, 
                         x, y, n_hidden_units)
     print('check_grad() value: {}'.format(gradient_check))
