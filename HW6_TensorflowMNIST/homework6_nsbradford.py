@@ -137,7 +137,7 @@ def main(_):
     SIZE_OUTPUT = 10
     SIZE_INPUT = 784
     LEARNING_RATE = 0.4
-    N_BATCHES = 10000
+    N_BATCHES = 7000
     BATCH_SIZE = 124
 
     keep_prob = tf.placeholder(tf.float32)
