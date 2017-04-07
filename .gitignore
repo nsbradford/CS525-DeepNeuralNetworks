@@ -2,6 +2,7 @@
 # Created by https://www.gitignore.io/api/python
 
 # Specific to this project
+HW7_ConvNetMNIST/MNIST_data
 HW4_SoftmaxRegression/mnist_data
 HW5_3LayerNN/mnist_data
 # *.npy
