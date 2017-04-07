@@ -3,8 +3,11 @@
     Nicholas S. Bradford
     9 April 2017
 
+    Takes 46 seconds on the GPU
+
 """
 
+print('Import TensorFlow-GPU...')
 import argparse
 import sys
 import tensorflow as tf
@@ -12,25 +15,28 @@ from tensorflow.examples.tutorials.mnist import input_data
 
 
 def weight_variable(shape):
-  initial = tf.truncated_normal(shape, stddev=0.1)
-  return tf.Variable(initial)
+    initial = tf.truncated_normal(shape, stddev=0.1)
+    return tf.Variable(initial)
 
 
 def bias_variable(shape):
-  initial = tf.constant(0.1, shape=shape)
-  return tf.Variable(initial)
+    initial = tf.constant(0.1, shape=shape)
+    return tf.Variable(initial)
 
 
 def conv2d(x, W):
-  return tf.nn.conv2d(x, W, strides=[1, 1, 1, 1], padding='SAME')
+    return tf.nn.conv2d(x, W, strides=[1, 1, 1, 1], padding='SAME')
 
 
 def max_pool_2x2(x):
-  return tf.nn.max_pool(x, ksize=[1, 2, 2, 1],
+    return tf.nn.max_pool(x, ksize=[1, 2, 2, 1],
                         strides=[1, 2, 2, 1], padding='SAME')
 
 
 def main(_):
+    print('Assemble...')
+    N_BATCHES = 1000
+
     mnist = input_data.read_data_sets('MNIST_data', one_hot=True)
     sess = tf.InteractiveSession()
 
@@ -69,17 +75,25 @@ def main(_):
     train_step = tf.train.AdamOptimizer(1e-4).minimize(cross_entropy)
     correct_prediction = tf.equal(tf.argmax(y_conv,1), tf.argmax(y_,1))
     accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
-    sess.run(tf.global_variables_initializer())
-    for i in range(20000):
-      batch = mnist.train.next_batch(50)
-      if i%100 == 0:
-        train_accuracy = accuracy.eval(feed_dict={
-            x:batch[0], y_: batch[1], keep_prob: 1.0})
-        print("step %d, training accuracy %g"%(i, train_accuracy))
-      train_step.run(feed_dict={x: batch[0], y_: batch[1], keep_prob: 0.5})
 
-    print("test accuracy %g"%accuracy.eval(feed_dict={
-        x: mnist.test.images, y_: mnist.test.labels, keep_prob: 1.0}))
+    print('Initialize vars...')
+    sess.run(tf.global_variables_initializer())
+    for i in range(N_BATCHES):
+        batch = mnist.train.next_batch(50)
+        if i > N_BATCHES - 21 or i % 100 == 0:
+            train_accuracy = accuracy.eval(feed_dict={
+                                x:batch[0], y_: batch[1], keep_prob: 1.0})
+            print("step %d, training accuracy %g"%(i, train_accuracy))
+        train_step.run(feed_dict={x: batch[0], y_: batch[1], keep_prob: 0.5})
+
+
+    # 10,000 is too many examples to fit on a 2GB GPU - must split it up
+    # print("test accuracy %g"%accuracy.eval(feed_dict={
+    #     x: mnist.test.images, y_: mnist.test.labels, keep_prob: 1.0}))
+    for i in xrange(10):
+        testSet = mnist.test.next_batch(1000)
+        print("test accuracy %g"%accuracy.eval(feed_dict={
+        x: testSet[0], y_: testSet[1], keep_prob: 1.0}))
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
