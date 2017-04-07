@@ -94,7 +94,7 @@ def main(_):
     for i in range(10):
         testSet = mnist.test.next_batch(1000)
         acc = accuracy.eval(feed_dict={x: testSet[0], y_: testSet[1], keep_prob: 1.0})
-        print("test accuracy %g"%acc)
+        # print("test accuracy %g"%acc)
         answers.append(acc)
     print('Test accuracy: {}'.format(sum(answers) / 10))
 
