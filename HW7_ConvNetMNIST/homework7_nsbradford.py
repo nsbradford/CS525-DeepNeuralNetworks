@@ -3,7 +3,7 @@
     Nicholas S. Bradford
     9 April 2017
 
-    Takes 46 seconds on the GPU
+    Takes 46 seconds on the GPU, 1:45 on CPU
 
 """
 
@@ -35,7 +35,7 @@ def max_pool_2x2(x):
 
 def main(_):
     print('Assemble...')
-    N_BATCHES = 1000
+    N_BATCHES = 20000
 
     mnist = input_data.read_data_sets('MNIST_data', one_hot=True)
     sess = tf.InteractiveSession()
@@ -90,10 +90,13 @@ def main(_):
     # 10,000 is too many examples to fit on a 2GB GPU - must split it up
     # print("test accuracy %g"%accuracy.eval(feed_dict={
     #     x: mnist.test.images, y_: mnist.test.labels, keep_prob: 1.0}))
-    for i in xrange(10):
+    answers = []
+    for i in range(10):
         testSet = mnist.test.next_batch(1000)
-        print("test accuracy %g"%accuracy.eval(feed_dict={
-        x: testSet[0], y_: testSet[1], keep_prob: 1.0}))
+        acc = accuracy.eval(feed_dict={x: testSet[0], y_: testSet[1], keep_prob: 1.0})
+        print("test accuracy %g"%acc)
+        answers.append(acc)
+    print('Test accuracy: {}'.format(sum(answers) / 10))
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
